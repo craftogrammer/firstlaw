@@ -19,6 +19,21 @@ Empty repos are valid. There is no scaffold precondition that halts bootstrap.
 
 ---
 
+## 0.1 Autonomy rule
+
+The agent executes this protocol end-to-end without asking the user for permission between phases, subagents, or file reads. User interaction is reserved for:
+
+- **Blocking elicitation questions** declared by subagent contracts (identity, anti-goals, mode confirmation, discovery gaps the agent cannot resolve from code).
+- **Critical quality-audit acknowledgement** (§8).
+- **60-minute overrun checkpoint** (§10).
+- **Advisor checkpoints** if an advisor capability is available (§4) — these are agent-to-advisor, not agent-to-user.
+
+"Should I proceed to the next phase?" / "Should I run the next subagent?" / "Should I read the next file?" are not legitimate prompts in this protocol. Proceed.
+
+The agent announces state transitions in one-line status messages (mode detected, execution mode chosen, phase starting, phase complete, bootstrap complete). It does not request approval to transition.
+
+---
+
 ## 1. Mode detection (automatic, then confirm)
 
 Signals to detect:

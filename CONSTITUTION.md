@@ -13,7 +13,11 @@ If you are an agent reading this file for the first time in a session:
 4. Read `.law/context/current-system.json` if present (non-authoritative cache).
 5. Check `.law/context/pending-questions.json` for unresolved items.
 
-Do not skip steps 1–3. They are the difference between working with this repo and guessing at it.
+Execute all five steps in one pass. Do not ask the user for permission between steps — these are reads, not writes. Permission prompts are reserved for destructive actions (file writes, deletions, commits). If BOOTSTRAP mode is entered at step 3, continue directly into `.law/bootstrap/INIT.md`; do not stop to announce the transition or ask whether to proceed.
+
+"Should I read the next file?" is never a legitimate prompt in the cold-read. Proceed.
+
+Steps 1–3 are non-negotiable. They are the difference between working with this repo and guessing at it.
 -->
 
 This document is the top of this project's truth hierarchy. Everything else — code, contracts, doctrine, charters, plans, tool configs, adapter files — is subordinate to it. Reading this file is the first action an agent takes in any session on this repo.
