@@ -104,7 +104,7 @@ On conflict, higher layer wins. Agents halt on ambiguity; resolution is explicit
 The kit ships three small programs in `.law/bin/` that enforce properties of the kit itself:
 
 - `verify-adapters` — adapter delimiter blocks stayed intact
-- `validate-contracts` — contracts validate against their schemas (requires `check-jsonschema` or `ajv-cli`)
+- `validate-contracts` — contracts validate against their schemas. Uses `check-jsonschema` or `ajv` if globally installed, otherwise falls back to `npx ajv-cli` (zero-install on any Node machine).
 - `check-coupling` — opt-in; source-path changes are accompanied by contract amendments
 
 Compose them however you want. Example git pre-commit (copy `.law/git-hooks/pre-commit.sample` to `.git/hooks/pre-commit`):
@@ -117,12 +117,11 @@ set -e
 .law/bin/check-coupling
 ```
 
-Example GitHub Actions step:
+Example GitHub Actions step (uses npx fallback, no pre-install needed):
 
 ```yaml
 - name: firstlaw integrity
   run: |
-    pipx install check-jsonschema
     .law/bin/verify-adapters
     .law/bin/validate-contracts
     .law/bin/check-coupling

@@ -10,7 +10,14 @@
 #   .law/                   at repo root
 #   KIT_VERSION             at repo root
 #
-# Idempotent: will not overwrite existing files unless --force is passed.
+# Idempotent. Two categories of files:
+#   Kit files     (constitution, scripts, schemas, doctrine, subagent contracts,
+#                  bootstrap protocol, templates): overwritten on --force.
+#   Template files (.law/contracts/*, .law/context/current-system.json,
+#                  .law/context/pending-questions.json): NEVER overwritten
+#                  — after bootstrap these hold project law. --force ignores them.
+#                  Delete manually if you truly want to re-bootstrap from skeleton.
+#
 # After install, open a new chat with any agent and say: "read CONSTITUTION.md"
 
 set -eu
@@ -44,7 +51,7 @@ need curl
 need mkdir
 
 fetch() {
-  # fetch <url> <dest>
+  # fetch <url> <dest>  — respects --force (overwrites existing if FORCE=1)
   _url="$1"; _dest="$2"
   _dir="$(dirname "$_dest")"
   [ -d "$_dir" ] || mkdir -p "$_dir"
@@ -59,10 +66,25 @@ fetch() {
   log "wrote: $_dest"
 }
 
-# ---------- file manifest ----------
-# Kept flat and explicit. No globbing; the installer pulls exactly these files.
+fetch_once() {
+  # fetch_once <url> <dest>  — NEVER overwrites; preserves project-populated files
+  _url="$1"; _dest="$2"
+  _dir="$(dirname "$_dest")"
+  [ -d "$_dir" ] || mkdir -p "$_dir"
+  if [ -e "$_dest" ]; then
+    log "preserve: $_dest"
+    return 0
+  fi
+  curl -fsSL "$_url" -o "$_dest" || die "download failed: $_url"
+  log "wrote: $_dest"
+}
 
-FILES="
+# ---------- file manifests ----------
+# Two lists. KIT_FILES upgrade on --force. TEMPLATE_FILES install-once and
+# are never overwritten, because after bootstrap they contain project law
+# (populated contracts, regenerated snapshots). Clobbering them destroys work.
+
+KIT_FILES="
 CONSTITUTION.md
 KIT_VERSION
 .law/KIT_INDEX.md
@@ -77,13 +99,6 @@ KIT_VERSION
 .law/subagents/doc-taxonomy.contract.md
 .law/subagents/adapter.contract.md
 .law/subagents/quality-audit.contract.md
-.law/contracts/project.contract.json
-.law/contracts/domain-map.contract.json
-.law/contracts/truth-owners.contract.json
-.law/contracts/dependency-rules.contract.json
-.law/contracts/ambiguity-policies.contract.json
-.law/contracts/doc-taxonomy.contract.json
-.law/contracts/quality-audit.contract.json
 .law/schemas/project.schema.json
 .law/schemas/domain-map.schema.json
 .law/schemas/truth-owners.schema.json
@@ -97,8 +112,6 @@ KIT_VERSION
 .law/doctrine/agent-behavior.md
 .law/charters/README.md
 .law/charters/example-domain.md
-.law/context/current-system.json
-.law/context/pending-questions.json
 .law/context/research/README.md
 .law/bin/README.md
 .law/bin/verify-adapters
@@ -111,18 +124,34 @@ KIT_VERSION
 .law/templates/check-anti-patterns.example.mjs
 "
 
+TEMPLATE_FILES="
+.law/contracts/project.contract.json
+.law/contracts/domain-map.contract.json
+.law/contracts/truth-owners.contract.json
+.law/contracts/dependency-rules.contract.json
+.law/contracts/ambiguity-policies.contract.json
+.law/contracts/doc-taxonomy.contract.json
+.law/contracts/quality-audit.contract.json
+.law/context/current-system.json
+.law/context/pending-questions.json
+"
+
 # ---------- preflight ----------
 
 if [ -f CONSTITUTION.md ] && [ "$FORCE" -ne 1 ]; then
-  log "note: CONSTITUTION.md already exists. Re-run with --force to overwrite."
+  log "note: CONSTITUTION.md already exists. Re-run with --force to upgrade kit files."
 fi
 
 # ---------- install ----------
 
 log "installing firstlaw from: $KIT_BASE_URL"
 
-for rel in $FILES; do
+for rel in $KIT_FILES; do
   fetch "$KIT_BASE_URL/$rel" "./$rel"
+done
+
+for rel in $TEMPLATE_FILES; do
+  fetch_once "$KIT_BASE_URL/$rel" "./$rel"
 done
 
 # ---------- next-step ----------
