@@ -11,13 +11,15 @@ If you are an agent reading this file for the first time in a session, execute t
    - `skeleton` or `bootstrapping` → read `.law/bootstrap/INIT.md` and execute that protocol. The cold-read continues *into* the bootstrap protocol — it does not pause here.
    - `active` → read the contracts, doctrine, and charters relevant to the current task. Do not read everything.
 4. Read `.law/context/current-system.json` if present.
-5. Read `.law/context/pending-questions.json`.
+5. Read `.law/context/pending-questions.json`. If `.law/context/last-check.log` exists, read it too.
+6. Run `.law/bin/verify-adapters` and `.law/bin/validate-contracts`. Non-zero exit from either = halt and report the failures to the user before acting on the task. If the shell is unavailable, skip and note it.
 
 The turn ends only when one of these fires:
 
-- All five steps complete in OPERATE mode, and the agent is ready to act on the user's original request.
+- All six steps complete in OPERATE mode, and the agent is ready to act on the user's original request.
 - A blocking elicitation question defined by the bootstrap protocol is reached (identity, anti-goals, mode confirmation, or an irresolvable discovery gap).
 - The quality-audit acknowledgement gate or the 60-minute overrun checkpoint fires (defined in `.law/bootstrap/INIT.md`).
+- A kit integrity script in step 6 returned non-zero.
 
 The following are **violations**, not legitimate turn boundaries:
 
@@ -313,7 +315,31 @@ Quality-audit findings (in `.law/contracts/quality-audit.contract.json`) are **a
 
 ---
 
-## 12. What this constitution is not
+## 12. What this kit enforces vs what the project owns
+
+Firstlaw enforces properties of itself, not properties of your code. Be clear about which is which — conflating them invites silent drift.
+
+**Kit-enforced.** Three small programs in `.law/bin/`, composed however you want (git hooks, CI, shell pipelines, test runner, Makefile — the kit has no opinion):
+
+- `verify-adapters` — every adapter file listed in `project.contract.json#adapters.patched_files` still contains its `BEGIN/END .law/CONSTITUTION-FIRST` delimiter pair.
+- `validate-contracts` — every `.law/contracts/*.contract.json` validates against its declared `$schema`. Requires `check-jsonschema` (preferred) or `ajv-cli`; fails closed if neither is installed.
+- `check-coupling` — if a diff touches paths declared in `project.contract.json#enforcement.coupled_paths` without touching any file under `.law/contracts/`, flags the coupling violation. Opt-in; empty globs list = no-op.
+
+These are the parts of repo law whose enforcement does not depend on project semantics. The kit owns them end to end.
+
+**Project-owned.** Three starter examples in `.law/templates/`; the project copies, adapts, and owns the result:
+
+- Truth-owner writer enforcement (storage semantics differ per stack).
+- Cross-domain import enforcement (layer classifier is project-specific).
+- Anti-pattern gates: file-size caps, forbidden patterns, generic-folder charter check (thresholds and patterns are doctrine choices).
+
+If your project has no code enforcing a contract, that contract is prose until you write the gate. The kit declares; your repo enforces. Don't confuse the layers.
+
+**Escape hatches.** Every check is a single program with a Unix exit code. Bypass with `|| true`, `--no-verify`, or not running it. There is no `SKIP_*` environment convention, because there is no dispatcher to convention over. Agents: do not bypass without surfacing the reason to the user.
+
+---
+
+## 13. What this constitution is not
 
 - not a style guide
 - not a linter configuration

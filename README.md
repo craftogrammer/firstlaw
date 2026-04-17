@@ -47,6 +47,9 @@ CONSTITUTION.md
 .law/
 ├── KIT_INDEX.md
 ├── adapters.md
+├── bin/                # kit integrity scripts (verify-adapters, validate-contracts, check-coupling)
+├── git-hooks/          # sample pre-commit
+├── templates/          # project-owned check examples
 ├── bootstrap/
 │   ├── INIT.md
 │   └── questions/cross-cutting.json
@@ -95,6 +98,37 @@ On conflict, higher layer wins. Agents halt on ambiguity; resolution is explicit
 - **Non-destructive adapter patches**: tool-facing files are patched only inside a delimited block; user content outside is inviolate; conflicts halt.
 - **Quality audit is advisory**: critical findings require acknowledgement, never halt bootstrap.
 - **Empty repos are valid**: `greenfield-from-empty` is a first-class mode; no scaffold precondition.
+
+## Enforcement
+
+The kit ships three small programs in `.law/bin/` that enforce properties of the kit itself:
+
+- `verify-adapters` — adapter delimiter blocks stayed intact
+- `validate-contracts` — contracts validate against their schemas (requires `check-jsonschema` or `ajv-cli`)
+- `check-coupling` — opt-in; source-path changes are accompanied by contract amendments
+
+Compose them however you want. Example git pre-commit (copy `.law/git-hooks/pre-commit.sample` to `.git/hooks/pre-commit`):
+
+```sh
+#!/usr/bin/env sh
+set -e
+.law/bin/verify-adapters
+.law/bin/validate-contracts
+.law/bin/check-coupling
+```
+
+Example GitHub Actions step:
+
+```yaml
+- name: firstlaw integrity
+  run: |
+    pipx install check-jsonschema
+    .law/bin/verify-adapters
+    .law/bin/validate-contracts
+    .law/bin/check-coupling
+```
+
+Project-specific enforcement (truth-owner writers, cross-domain imports, anti-patterns) lives in your `scripts/` directory. Starting points are in `.law/templates/`.
 
 ## Versioning
 

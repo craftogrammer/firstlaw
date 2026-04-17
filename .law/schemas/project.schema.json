@@ -106,6 +106,18 @@
         "on_session_start": { "type": "array", "items": { "type": "string" } },
         "on_conflict": { "type": "array", "items": { "type": "string" } }
       }
+    },
+    "enforcement": {
+      "type": "object",
+      "description": "Opt-in coupling between source paths and contract amendments. Consumed by .law/bin/check-coupling. Empty = no-op.",
+      "properties": {
+        "coupled_paths": {
+          "type": "array",
+          "description": "Glob patterns. ** matches any subpath; * does not cross /; ? is a single character. If a diff touches any matching path without touching .law/contracts/*, check-coupling exits non-zero.",
+          "items": { "type": "string" },
+          "default": []
+        }
+      }
     }
   }
 }

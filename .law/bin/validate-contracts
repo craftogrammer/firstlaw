@@ -1,0 +1,50 @@
+#!/usr/bin/env sh
+# validate-contracts — validate every .law/contracts/*.contract.json against
+# its declared schema.
+#
+# Picks the first available validator:
+#   check-jsonschema   (pipx install check-jsonschema)
+#   ajv                (npm install -g ajv-cli)
+#
+# Fails closed if neither is present.
+
+set -eu
+
+SCHEMAS_DIR=".law/schemas"
+CONTRACTS_DIR=".law/contracts"
+
+if command -v check-jsonschema >/dev/null 2>&1; then
+  validator=check-jsonschema
+elif command -v ajv >/dev/null 2>&1; then
+  validator=ajv
+else
+  cat >&2 <<'EOF'
+validate-contracts: no JSON Schema validator installed.
+install one:
+  pipx install check-jsonschema    # preferred
+  npm install -g ajv-cli
+EOF
+  exit 2
+fi
+
+fail=0
+for contract in "$CONTRACTS_DIR"/*.contract.json; do
+  [ -f "$contract" ] || continue
+  base=$(basename "$contract" .contract.json)
+  schema="$SCHEMAS_DIR/$base.schema.json"
+  if [ ! -f "$schema" ]; then
+    printf 'validate-contracts: no schema for %s (expected %s)\n' "$contract" "$schema" >&2
+    fail=1
+    continue
+  fi
+  case "$validator" in
+    check-jsonschema)
+      check-jsonschema --schemafile "$schema" "$contract" >&2 || fail=1
+      ;;
+    ajv)
+      ajv validate -s "$schema" -d "$contract" --spec=draft2020 >&2 || fail=1
+      ;;
+  esac
+done
+
+exit $fail

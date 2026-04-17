@@ -19,6 +19,9 @@ On any conflict, the higher layer wins. An agent that notices a lower layer cont
 .law/
 ├── KIT_INDEX.md            ← you are here
 ├── adapters.md             ← policy for tool-facing files (non-destructive patching)
+├── bin/                    ← kit integrity scripts (verify-adapters, validate-contracts, check-coupling)
+├── git-hooks/              ← sample pre-commit calling the bin scripts
+├── templates/              ← project-owned check examples (truth-owners, dep-direction, anti-patterns)
 ├── bootstrap/
 │   ├── INIT.md             ← the bootstrap protocol
 │   └── questions/
@@ -33,6 +36,7 @@ On any conflict, the higher layer wins. An agent that notices a lower layer cont
 └── context/                ← regenerable snapshots + research audit trail
     ├── current-system.json
     ├── pending-questions.json
+    ├── last-check.log      ← optional; persisted output of `.law/bin/*` runs
     └── research/           ← per-subagent research logs, <id>-<YYYY-MM-DD>.json
 ```
 
@@ -44,7 +48,8 @@ On any conflict, the higher layer wins. An agent that notices a lower layer cont
 4. Branch on `status`:
    - `skeleton` or `bootstrapping` → read `.law/bootstrap/INIT.md` and execute.
    - `active` → read whichever contracts/doctrine/charters are relevant to the current task; do not read everything.
-5. Check `.law/context/pending-questions.json` for unresolved items.
+5. Check `.law/context/pending-questions.json`; read `.law/context/last-check.log` if it exists.
+6. Run `.law/bin/verify-adapters` and `.law/bin/validate-contracts`; halt on non-zero.
 
 ## What this kit does not own
 

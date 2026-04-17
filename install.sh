@@ -53,6 +53,9 @@ fetch() {
     return 0
   fi
   curl -fsSL "$_url" -o "$_dest" || die "download failed: $_url"
+  case "$_dest" in
+    ./.law/bin/*|./.law/git-hooks/*|./.law/templates/*) chmod +x "$_dest" 2>/dev/null || true ;;
+  esac
   log "wrote: $_dest"
 }
 
@@ -97,6 +100,15 @@ KIT_VERSION
 .law/context/current-system.json
 .law/context/pending-questions.json
 .law/context/research/README.md
+.law/bin/README.md
+.law/bin/verify-adapters
+.law/bin/validate-contracts
+.law/bin/check-coupling
+.law/git-hooks/pre-commit.sample
+.law/templates/README.md
+.law/templates/check-truth-owners.example.mjs
+.law/templates/check-dep-direction.example.mjs
+.law/templates/check-anti-patterns.example.mjs
 "
 
 # ---------- preflight ----------
