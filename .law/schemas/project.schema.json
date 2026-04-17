@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repo-constitution-kit/schemas/project.schema.json",
+  "title": "Project contract",
+  "description": "Top-level identity, mode, pointers, and stack/tooling for a project governed by the constitution kit.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "owner",
+    "purpose",
+    "authoritative",
+    "generated_from",
+    "last_validated_at",
+    "status",
+    "identity",
+    "mode",
+    "pointers"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "owner": { "type": "string" },
+    "purpose": { "type": "string" },
+    "authoritative": { "type": "boolean" },
+    "generated_from": {
+      "type": "object",
+      "required": ["subagent", "run_at"],
+      "properties": {
+        "subagent": { "type": "string" },
+        "run_at": { "type": ["string", "null"], "format": "date-time" },
+        "kit_version": { "type": ["string", "null"] }
+      }
+    },
+    "last_validated_at": { "type": ["string", "null"], "format": "date-time" },
+    "status": {
+      "type": "string",
+      "enum": ["skeleton", "bootstrapping", "active", "stale"]
+    },
+    "identity": {
+      "type": "object",
+      "required": ["name", "purpose_one_line", "primary_users", "success_criteria", "anti_goals"],
+      "properties": {
+        "name": { "type": "string" },
+        "purpose_one_line": { "type": "string" },
+        "primary_users": { "type": "array", "items": { "type": "string" } },
+        "success_criteria": { "type": "array", "items": { "type": "string" } },
+        "anti_goals": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["greenfield", "greenfield-from-empty", "brownfield"]
+    },
+    "mode_notes": { "type": "string" },
+    "pointers": {
+      "type": "object",
+      "required": ["constitution", "contracts_dir", "doctrine_dir", "charters_dir", "context_dir", "subagents_dir", "schemas_dir"],
+      "properties": {
+        "constitution": { "type": "string" },
+        "contracts_dir": { "type": "string" },
+        "doctrine_dir": { "type": "string" },
+        "charters_dir": { "type": "string" },
+        "context_dir": { "type": "string" },
+        "subagents_dir": { "type": "string" },
+        "schemas_dir": { "type": "string" }
+      }
+    },
+    "stack": {
+      "type": "object",
+      "description": "Tooling/commands captured from live inspection. Pinned deps live in lockfiles (source of truth). Commands codified here.",
+      "properties": {
+        "language": { "type": "string" },
+        "package_manager": { "type": "string" },
+        "runtime": { "type": "string" },
+        "build_cmd": { "type": ["string", "null"] },
+        "test_cmd": { "type": ["string", "null"] },
+        "lint_cmd": { "type": ["string", "null"] },
+        "typecheck_cmd": { "type": ["string", "null"] },
+        "dep_manifest_paths": { "type": "array", "items": { "type": "string" } },
+        "lockfile_paths": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "adapters": {
+      "type": "object",
+      "properties": {
+        "policy_path": { "type": "string" },
+        "patched_files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "patched_at"],
+            "properties": {
+              "path": { "type": "string" },
+              "patched_at": { "type": "string", "format": "date-time" },
+              "discovery_method": {
+                "type": "string",
+                "enum": ["filename-heuristic", "content-heuristic", "web-research", "user-supplied"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "agent_directives": {
+      "type": "object",
+      "properties": {
+        "on_session_start": { "type": "array", "items": { "type": "string" } },
+        "on_conflict": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

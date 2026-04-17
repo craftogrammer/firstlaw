@@ -1,0 +1,122 @@
+{
+  "$schema": "../schemas/doc-taxonomy.schema.json",
+  "schema_version": 1,
+  "owner": "doc-taxonomy",
+  "purpose": "Declares the document layers that exist in this repo, their mutability and authority, and what happens when a document cannot be classified. Prevents ungoverned docs becoming de-facto truth.",
+  "authoritative": true,
+  "generated_from": {
+    "subagent": "doc-taxonomy",
+    "run_at": null,
+    "kit_version": "1.0.0"
+  },
+  "last_validated_at": null,
+  "status": "skeleton",
+  "rules": {
+    "every_doc_has_exactly_one_layer": true,
+    "unclassified_docs_forbidden": true,
+    "on_unclassified": "halt-and-classify"
+  },
+  "layers": [
+    {
+      "id": "constitution",
+      "purpose": "Top-level repo law.",
+      "mutability": "amendable",
+      "lifetime": "timeless until amended",
+      "authority": "highest",
+      "location_pattern": ["CONSTITUTION.md"]
+    },
+    {
+      "id": "contract",
+      "purpose": "Compiled machine-readable law. Schema-validated.",
+      "mutability": "amendable",
+      "lifetime": "timeless until amended",
+      "authority": "compiled-law",
+      "location_pattern": [".law/contracts/*.contract.json"]
+    },
+    {
+      "id": "doctrine",
+      "purpose": "Timeless prose elaborating principles. May not contradict constitution or contracts.",
+      "mutability": "amendable",
+      "lifetime": "timeless until amended",
+      "authority": "elaboration",
+      "location_pattern": [".law/doctrine/*.md"]
+    },
+    {
+      "id": "charter",
+      "purpose": "Per-domain timeless law. May not contradict constitution or contracts.",
+      "mutability": "amendable",
+      "lifetime": "timeless until amended",
+      "authority": "elaboration",
+      "location_pattern": [".law/charters/*.md"]
+    },
+    {
+      "id": "runtime-truth",
+      "purpose": "Actual state of the running system (DB schemas, deployed configs, feature flags, API contracts). Lives in code and infra.",
+      "mutability": "amendable",
+      "lifetime": "whatever the code says",
+      "authority": "highest",
+      "location_pattern": ["src/**", "infra/**", "migrations/**", "schema/**"]
+    },
+    {
+      "id": "temporary-plan",
+      "purpose": "A time-boxed execution unit. Kit does not own plan format or location; projects decide.",
+      "mutability": "temporary",
+      "lifetime": "bounded; closed and archived or deleted",
+      "authority": "non-authoritative",
+      "location_pattern": [],
+      "rename_rules": "Projects own the format and location of plans. This layer exists so plans are not mistaken for doctrine."
+    },
+    {
+      "id": "context-snapshot",
+      "purpose": "Regenerable fast-orientation summary. Never authoritative; only a cached read of truth.",
+      "mutability": "regenerable",
+      "lifetime": "regenerate on runtime-truth change or session close",
+      "authority": "non-authoritative",
+      "location_pattern": [".law/context/*.json", ".law/context/research/*"]
+    },
+    {
+      "id": "adapter",
+      "purpose": "Tool-facing projection of repo law (e.g., CLAUDE.md, AGENTS.md). Never authoritative.",
+      "mutability": "amendable",
+      "lifetime": "lives as long as the tool is used",
+      "authority": "projection",
+      "location_pattern": ["CLAUDE.md", "AGENTS.md", "codex.md", "GEMINI.md", ".cursorrules", ".cursor/rules/**", ".github/copilot-instructions.md", ".continuerc", ".aider.conf.yml", ".windsurfrules"]
+    },
+    {
+      "id": "code-comment",
+      "purpose": "Inline explanation attached to code. Follows the code's lifetime.",
+      "mutability": "amendable",
+      "lifetime": "with the code",
+      "authority": "non-authoritative",
+      "location_pattern": []
+    },
+    {
+      "id": "generated",
+      "purpose": "Documents produced by tools (API docs, changelogs). Regeneration policy owned by the generating tool.",
+      "mutability": "regenerable",
+      "lifetime": "with the generator",
+      "authority": "non-authoritative",
+      "location_pattern": []
+    },
+    {
+      "id": "external-reference",
+      "purpose": "Vendored third-party docs, licences, upstream READMEs. Treated as read-only projection of upstream truth.",
+      "mutability": "read-only-projection",
+      "lifetime": "until upstream changes",
+      "authority": "projection",
+      "location_pattern": []
+    }
+  ],
+  "classification_directives": {
+    "on_new_doc": [
+      "Classify into exactly one layer before committing",
+      "If the layer is unclear, halt and ask the human",
+      "Place the doc in a location matching the layer's location_pattern"
+    ],
+    "on_ambiguous_layer": [
+      "Halt",
+      "Record in .law/context/current-system.json under contradiction_map",
+      "Propose a classification with confidence label; human resolves"
+    ]
+  }
+}

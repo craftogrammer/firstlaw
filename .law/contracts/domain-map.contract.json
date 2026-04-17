@@ -1,0 +1,43 @@
+{
+  "$schema": "../schemas/domain-map.schema.json",
+  "schema_version": 1,
+  "owner": "architecture",
+  "purpose": "Declares the domains that exist in this project, their boundaries, and what they explicitly are not. Source of truth for 'which folder does this code belong to?'",
+  "authoritative": true,
+  "generated_from": {
+    "subagent": "architecture",
+    "run_at": null,
+    "kit_version": "1.0.0"
+  },
+  "last_validated_at": null,
+  "status": "skeleton",
+  "rules": {
+    "every_runtime_module_has_exactly_one_domain": true,
+    "generic_containers_require_explicit_domain_entry": true,
+    "forbidden_default_names_without_justification": [
+      "shared",
+      "common",
+      "utils",
+      "lib",
+      "helpers",
+      "manager",
+      "service",
+      "core",
+      "misc"
+    ],
+    "forbidden_name_notes": "These names are not banned outright. They require an explicit domain entry in this contract with a real purpose, boundary, and charter. A generic container with no charter is a violation."
+  },
+  "domains": [],
+  "agent_directives": {
+    "on_new_module": [
+      "Identify its owning domain from this contract before writing code",
+      "If no domain fits, stop and propose a new domain entry plus a charter",
+      "Do not place the module in a generic container"
+    ],
+    "on_domain_overlap": [
+      "Halt",
+      "Record the overlap in .law/context/current-system.json under contradiction_map",
+      "Escalate per ambiguity-policies.contract.json"
+    ]
+  }
+}

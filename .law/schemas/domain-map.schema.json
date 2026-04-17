@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repo-constitution-kit/schemas/domain-map.schema.json",
+  "title": "Domain map contract",
+  "description": "Declares domains that exist in the project, their boundaries, and what is explicitly not a domain.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "owner",
+    "purpose",
+    "authoritative",
+    "generated_from",
+    "last_validated_at",
+    "status",
+    "rules",
+    "domains"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "owner": { "type": "string" },
+    "purpose": { "type": "string" },
+    "authoritative": { "type": "boolean" },
+    "generated_from": {
+      "type": "object",
+      "required": ["subagent", "run_at"],
+      "properties": {
+        "subagent": { "type": "string" },
+        "run_at": { "type": ["string", "null"], "format": "date-time" },
+        "kit_version": { "type": ["string", "null"] }
+      }
+    },
+    "last_validated_at": { "type": ["string", "null"], "format": "date-time" },
+    "status": {
+      "type": "string",
+      "enum": ["skeleton", "bootstrapping", "active", "stale"]
+    },
+    "rules": {
+      "type": "object",
+      "required": ["every_runtime_module_has_exactly_one_domain", "generic_containers_require_explicit_domain_entry", "forbidden_default_names_without_justification"],
+      "properties": {
+        "every_runtime_module_has_exactly_one_domain": { "type": "boolean" },
+        "generic_containers_require_explicit_domain_entry": { "type": "boolean" },
+        "forbidden_default_names_without_justification": { "type": "array", "items": { "type": "string" } },
+        "forbidden_name_notes": { "type": "string" }
+      }
+    },
+    "domains": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "purpose", "boundary_in", "boundary_out", "not_this_domain", "charter", "status"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "path": { "type": "string" },
+          "purpose": { "type": "string" },
+          "boundary_in": { "type": "array", "items": { "type": "string" } },
+          "boundary_out": { "type": "array", "items": { "type": "string" } },
+          "not_this_domain": { "type": "array", "items": { "type": "string" } },
+          "charter": { "type": "string" },
+          "status": { "type": "string", "enum": ["proposed", "active", "deprecated"] },
+          "evidence_or_judgment": { "type": "string", "enum": ["evidence", "judgment"] }
+        }
+      }
+    },
+    "agent_directives": {
+      "type": "object",
+      "properties": {
+        "on_new_module": { "type": "array", "items": { "type": "string" } },
+        "on_domain_overlap": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

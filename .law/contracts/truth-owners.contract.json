@@ -1,0 +1,33 @@
+{
+  "$schema": "../schemas/truth-owners.schema.json",
+  "schema_version": 1,
+  "owner": "ownership",
+  "purpose": "Declares the single writer for each piece of runtime truth. 'Writer' is the domain authorised to mutate this truth. Everything else is a reader.",
+  "authoritative": true,
+  "generated_from": {
+    "subagent": "ownership",
+    "run_at": null,
+    "kit_version": "1.0.0"
+  },
+  "last_validated_at": null,
+  "status": "skeleton",
+  "rules": {
+    "single_writer_per_truth": true,
+    "readers_may_be_many": true,
+    "shadow_writes_forbidden": true,
+    "shadow_write_notes": "No domain may write an owned truth through a utility, middleware, or shared helper. If that feels necessary, the ownership model is wrong and must be amended."
+  },
+  "truths": [],
+  "agent_directives": {
+    "before_any_mutation": [
+      "Look up the truth in this contract",
+      "If not listed, stop and register it before mutating",
+      "If listed and you are not the declared writer, route the mutation through the writer"
+    ],
+    "on_multiple_writers_discovered": [
+      "Halt",
+      "Record the violation in .law/context/current-system.json under contradiction_map",
+      "Apply ambiguity-policies.contract.json#multiple-writers"
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "$comment": "Non-authoritative cache. Regenerable at the end of any session that changed runtime truth or any contract. Never treated as source of truth.",
+  "schema_version": 1,
+  "owner": "agent-regenerable",
+  "purpose": "Fast re-grounding snapshot. Lets a new session orient without re-reading the whole repo.",
+  "authoritative": false,
+  "generated_at": null,
+  "generated_by": null,
+  "kit_version": "1.0.0",
+  "mode": null,
+  "summary": {
+    "one_line": "",
+    "open_blockers_count": 0,
+    "critical_quality_findings_count": 0,
+    "critical_quality_findings_acknowledged": 0
+  },
+  "runtime_surface": {
+    "domains_present": [],
+    "domains_declared_but_missing_code": [],
+    "code_present_but_no_domain": []
+  },
+  "contradiction_map": [],
+  "doc_classification": [],
+  "judgment_log": [],
+  "recent_changes": [],
+  "open_questions": [],
+  "agent_directives": {
+    "on_read": [
+      "Treat every entry here as non-authoritative cache",
+      "Verify against runtime truth before acting on any claim in this file",
+      "If this file is older than the most recent runtime-truth change, regenerate before proceeding"
+    ]
+  }
+}

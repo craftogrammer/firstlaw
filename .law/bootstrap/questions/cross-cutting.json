@@ -1,0 +1,83 @@
+{
+  "$comment": "Cross-cutting questions asked during bootstrap. Subagent-specific questions are owned by each subagent, not centralized here. Each question has a stable id, an intent, and an expected answer shape. The elicitation rendering is environment-specific.",
+  "schema_version": 1,
+  "owner": "bootstrap",
+  "purpose": "Identity and mode questions shared across multiple subagents, asked once by the orchestrator.",
+  "questions": [
+    {
+      "id": "mode-confirm",
+      "intent": "Confirm the auto-detected project mode (greenfield, greenfield-from-empty, or brownfield).",
+      "answer_shape": "single_select",
+      "options": ["greenfield", "greenfield-from-empty", "brownfield"],
+      "blocking": true,
+      "asked_by_phase": 0,
+      "notes": "Presented with the signals the agent observed. User can override if detection is wrong."
+    },
+    {
+      "id": "project-name",
+      "intent": "Project name (defaults to inferred from manifest or directory name).",
+      "answer_shape": "free_text",
+      "blocking": true,
+      "asked_by_phase": 1,
+      "notes": "Pre-fill from package.json/Cargo.toml/etc. User confirms or overrides."
+    },
+    {
+      "id": "purpose-one-line",
+      "intent": "Subject-verb-user-outcome sentence describing what this product lets its user do, under what constraint.",
+      "answer_shape": "free_text",
+      "blocking": true,
+      "asked_by_phase": 1,
+      "notes": "Hard requirement. Generic statements are rejected; agent pushes back for specificity."
+    },
+    {
+      "id": "primary-users",
+      "intent": "Concrete archetype(s) of primary users. Not 'developers'; a specific role with context.",
+      "answer_shape": "free_text",
+      "blocking": true,
+      "asked_by_phase": 1,
+      "notes": "Agent probes vague answers. Primary users cannot be 'everyone'."
+    },
+    {
+      "id": "success-criteria",
+      "intent": "Observable outcomes that mean this product is working.",
+      "answer_shape": "free_text",
+      "blocking": true,
+      "asked_by_phase": 1,
+      "notes": "Must be observable. Feelings or intentions do not count."
+    },
+    {
+      "id": "anti-goals",
+      "intent": "Things this project will explicitly not do, each paired with a reason.",
+      "answer_shape": "free_text",
+      "blocking": true,
+      "asked_by_phase": 1,
+      "notes": "Agent probes for reasons. An anti-goal without a reason is a preference; it must become a commitment to enter the contract."
+    },
+    {
+      "id": "stack-build-test-lint",
+      "intent": "Confirm detected build / test / lint / typecheck commands, or provide them.",
+      "answer_shape": "free_text",
+      "blocking": false,
+      "asked_by_phase": 1,
+      "notes": "Non-blocking. If not provided, contract keeps nulls; post-bootstrap maintenance can fill later."
+    },
+    {
+      "id": "default-ambiguity-action",
+      "intent": "When no ambiguity policy matches, should the agent halt and escalate, or proceed with labeled judgment?",
+      "answer_shape": "single_select",
+      "options": ["halt_and_escalate", "proceed_with_judgment"],
+      "blocking": false,
+      "asked_by_phase": 2,
+      "notes": "Default is halt_and_escalate. Overriding to proceed_with_judgment is recorded explicitly."
+    },
+    {
+      "id": "adapter-patch-confirmation",
+      "intent": "Confirm which discovered agentic files may be patched with the constitution-first block.",
+      "answer_shape": "multi_select",
+      "options": [],
+      "blocking": true,
+      "asked_by_phase": 3,
+      "notes": "Options are populated at runtime by the adapter subagent from its heuristic scan. User can approve all, approve some, or defer with 'none'."
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "$comment": "Accumulator for non-blocking questions raised during bootstrap or operate mode, and for deferred blocking questions when the user is temporarily unavailable. Orchestrator surfaces these at session boundaries.",
+  "schema_version": 1,
+  "owner": "agent-regenerable",
+  "purpose": "Accumulate questions raised by subagents or the orchestrator that do not halt the current session but require resolution.",
+  "authoritative": false,
+  "questions": [],
+  "agent_directives": {
+    "on_read": [
+      "Before ending a session, surface every entry to the user",
+      "An entry with blocking: true must be resolved before the session may complete",
+      "Stale entries (older than one run without user contact) are re-surfaced, not silently dropped"
+    ]
+  }
+}

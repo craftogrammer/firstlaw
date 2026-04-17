@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repo-constitution-kit/schemas/ambiguity-policies.schema.json",
+  "title": "Ambiguity policies contract",
+  "description": "Declares what an agent must do when a specific class of ambiguity is observed. Ambiguity is never resolved by taste.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "owner",
+    "purpose",
+    "authoritative",
+    "generated_from",
+    "last_validated_at",
+    "status",
+    "rules",
+    "policies"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "owner": { "type": "string" },
+    "purpose": { "type": "string" },
+    "authoritative": { "type": "boolean" },
+    "generated_from": {
+      "type": "object",
+      "required": ["subagent", "run_at"],
+      "properties": {
+        "subagent": { "type": "string" },
+        "run_at": { "type": ["string", "null"], "format": "date-time" },
+        "kit_version": { "type": ["string", "null"] }
+      }
+    },
+    "last_validated_at": { "type": ["string", "null"], "format": "date-time" },
+    "status": {
+      "type": "string",
+      "enum": ["skeleton", "bootstrapping", "active", "stale"]
+    },
+    "rules": {
+      "type": "object",
+      "required": ["silent_resolution_forbidden", "default_action_when_no_policy_matches"],
+      "properties": {
+        "silent_resolution_forbidden": { "type": "boolean" },
+        "default_action_when_no_policy_matches": {
+          "type": "string",
+          "enum": ["halt_and_escalate", "proceed_with_judgment"]
+        }
+      }
+    },
+    "policies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "trigger", "action", "action_detail", "record_in"],
+        "properties": {
+          "id": { "type": "string" },
+          "trigger": { "type": "string" },
+          "action": {
+            "type": "string",
+            "enum": [
+              "consolidate",
+              "consolidate-to-owner",
+              "merge-to-owner",
+              "halt-and-escalate",
+              "harden-or-remove",
+              "prefer-runtime-as-evidence"
+            ]
+          },
+          "action_detail": { "type": "string" },
+          "record_in": { "type": "string" },
+          "evidence_or_judgment": { "type": "string", "enum": ["evidence", "judgment"] }
+        }
+      }
+    },
+    "agent_directives": {
+      "type": "object",
+      "properties": {
+        "on_ambiguity_observed": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

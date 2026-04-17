@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repo-constitution-kit/schemas/subagent-envelope.schema.json",
+  "title": "Subagent return envelope",
+  "description": "Structured return value from every subagent. The orchestrator never ingests raw research; only envelopes.",
+  "type": "object",
+  "required": [
+    "subagent_id",
+    "run_at",
+    "kit_version",
+    "decisions",
+    "evidence",
+    "judgment",
+    "questions_for_orchestrator",
+    "proposed_contract_patches"
+  ],
+  "properties": {
+    "subagent_id": {
+      "type": "string",
+      "enum": ["product", "architecture", "ownership", "ambiguity", "doc-taxonomy", "adapter", "quality-audit"]
+    },
+    "run_at": { "type": "string", "format": "date-time" },
+    "kit_version": { "type": "string" },
+    "executor_context": {
+      "type": "object",
+      "properties": {
+        "execution_mode": {
+          "type": "string",
+          "enum": ["preferred", "advisor-only", "degraded"]
+        },
+        "advisor_capability_available": { "type": "boolean" },
+        "advisor_calls_used": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "statement"],
+        "properties": {
+          "id": { "type": "string" },
+          "statement": { "type": "string" },
+          "rationale": { "type": "string" },
+          "alternatives_considered": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "description": "Observations that are directly verifiable. Web sources MUST include retrieval_date.",
+      "items": {
+        "type": "object",
+        "required": ["kind", "ref"],
+        "properties": {
+          "kind": { "type": "string", "enum": ["file", "command-output", "web", "user-statement"] },
+          "ref": { "type": "string" },
+          "excerpt": { "type": "string" },
+          "retrieved_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      }
+    },
+    "judgment": {
+      "type": "array",
+      "description": "Inferences, interpretations, assumptions. Must be explicitly labelled as such.",
+      "items": {
+        "type": "object",
+        "required": ["id", "statement", "basis"],
+        "properties": {
+          "id": { "type": "string" },
+          "statement": { "type": "string" },
+          "basis": { "type": "string" },
+          "confidence": { "type": "string", "enum": ["low", "medium", "high"] }
+        }
+      }
+    },
+    "questions_for_orchestrator": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "question", "blocking"],
+        "properties": {
+          "id": { "type": "string" },
+          "question": { "type": "string" },
+          "blocking": { "type": "boolean" },
+          "proposed_options": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "proposed_contract_patches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["contract", "patch"],
+        "properties": {
+          "contract": {
+            "type": "string",
+            "enum": [
+              "project.contract.json",
+              "domain-map.contract.json",
+              "truth-owners.contract.json",
+              "dependency-rules.contract.json",
+              "ambiguity-policies.contract.json",
+              "doc-taxonomy.contract.json",
+              "quality-audit.contract.json"
+            ]
+          },
+          "patch": {
+            "type": "object",
+            "description": "A JSON patch or merge-object to apply to the contract."
+          },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

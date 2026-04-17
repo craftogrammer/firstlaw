@@ -1,0 +1,19 @@
+{
+  "$schema": "../schemas/quality-audit.schema.json",
+  "schema_version": 1,
+  "owner": "quality-audit",
+  "purpose": "Advisory findings on dependencies, libraries, tooling, and anti-patterns detected during bootstrap and later audits. Informs the human; never halts constitution adoption.",
+  "authoritative": true,
+  "generated_from": {
+    "subagent": "quality-audit",
+    "run_at": null,
+    "kit_version": "1.0.0"
+  },
+  "last_validated_at": null,
+  "status": "skeleton",
+  "rules": {
+    "advisory_only": true,
+    "acknowledgement_required_for_critical": true
+  },
+  "findings": []
+}

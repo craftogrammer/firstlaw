@@ -1,0 +1,69 @@
+{
+  "$schema": "../schemas/ambiguity-policies.schema.json",
+  "schema_version": 1,
+  "owner": "ambiguity",
+  "purpose": "Declares what an agent or human must do when a specific class of ambiguity is observed. Ambiguity is never resolved by taste.",
+  "authoritative": true,
+  "generated_from": {
+    "subagent": "ambiguity",
+    "run_at": null,
+    "kit_version": "1.0.0"
+  },
+  "last_validated_at": null,
+  "status": "skeleton",
+  "rules": {
+    "silent_resolution_forbidden": true,
+    "default_action_when_no_policy_matches": "halt_and_escalate"
+  },
+  "policies": [
+    {
+      "id": "duplicate-logic",
+      "trigger": "Two code paths implement the same behavior under different names.",
+      "action": "consolidate",
+      "action_detail": "Pick the path that matches the domain owner in truth-owners.contract.json. Delete the other. If neither matches the declared owner, halt and escalate.",
+      "record_in": ".law/context/current-system.json#contradiction_map"
+    },
+    {
+      "id": "multiple-writers",
+      "trigger": "A truth has more than one writer.",
+      "action": "consolidate-to-owner",
+      "action_detail": "Route all writes through the domain declared in truth-owners.contract.json. Remove shadow writers.",
+      "record_in": ".law/context/current-system.json#contradiction_map"
+    },
+    {
+      "id": "config-in-two-places",
+      "trigger": "The same setting exists in two config surfaces.",
+      "action": "merge-to-owner",
+      "action_detail": "Declare one surface as owner in truth-owners.contract.json. Make the other surface read-only or remove it.",
+      "record_in": ".law/context/current-system.json#contradiction_map"
+    },
+    {
+      "id": "unclear-ownership",
+      "trigger": "A field, table, or responsibility has no declared owner.",
+      "action": "halt-and-escalate",
+      "action_detail": "Do not guess. Raise the gap; propose an owner only as a judgment entry in .law/context/current-system.json.",
+      "record_in": ".law/context/current-system.json#contradiction_map"
+    },
+    {
+      "id": "rule-softness",
+      "trigger": "A rule in doctrine or charter uses soft language ('usually', 'normally', 'should') without an enforcement path.",
+      "action": "harden-or-remove",
+      "action_detail": "Either add an enforcement path (contract entry, test, review gate) or delete the rule. A soft rule without enforcement is noise.",
+      "record_in": "doctrine edits + .law/context/current-system.json#contradiction_map"
+    },
+    {
+      "id": "runtime-contradicts-docs",
+      "trigger": "Observed runtime behavior contradicts documented behavior.",
+      "action": "prefer-runtime-as-evidence",
+      "action_detail": "Treat runtime as evidence. Update docs to match observed behavior OR fix runtime to match docs. Declare which; never leave the gap.",
+      "record_in": ".law/context/current-system.json#contradiction_map"
+    }
+  ],
+  "agent_directives": {
+    "on_ambiguity_observed": [
+      "Find the matching policy by trigger",
+      "If no policy matches, apply default_action_when_no_policy_matches",
+      "Always record the observation in .law/context/current-system.json before acting"
+    ]
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "$schema": "../schemas/project.schema.json",
+  "schema_version": 1,
+  "owner": "product",
+  "purpose": "Top-level identity, mode, pointers, and stack. The first contract an agent reads in any session.",
+  "authoritative": true,
+  "generated_from": {
+    "subagent": "product",
+    "run_at": null,
+    "kit_version": "1.0.0"
+  },
+  "last_validated_at": null,
+  "status": "skeleton",
+  "identity": {
+    "name": "",
+    "purpose_one_line": "",
+    "primary_users": [],
+    "success_criteria": [],
+    "anti_goals": []
+  },
+  "mode": "greenfield",
+  "mode_notes": "Modes: greenfield (scaffold present, no significant code yet) | greenfield-from-empty (no scaffold at all, define everything) | brownfield (existing non-trivial codebase requires discovery first).",
+  "pointers": {
+    "constitution": "CONSTITUTION.md",
+    "contracts_dir": ".law/contracts/",
+    "doctrine_dir": ".law/doctrine/",
+    "charters_dir": ".law/charters/",
+    "context_dir": ".law/context/",
+    "subagents_dir": ".law/subagents/",
+    "schemas_dir": ".law/schemas/"
+  },
+  "stack": {
+    "language": "",
+    "package_manager": "",
+    "runtime": "",
+    "build_cmd": null,
+    "test_cmd": null,
+    "lint_cmd": null,
+    "typecheck_cmd": null,
+    "dep_manifest_paths": [],
+    "lockfile_paths": []
+  },
+  "adapters": {
+    "policy_path": ".law/adapters.md",
+    "patched_files": []
+  },
+  "agent_directives": {
+    "on_session_start": [
+      "Read CONSTITUTION.md",
+      "Read this contract",
+      "Read .law/KIT_INDEX.md for fast orientation",
+      "If status is 'skeleton' or 'bootstrapping', run .law/bootstrap/INIT.md (bootstrap mode)",
+      "If status is 'active', proceed in operate mode",
+      "Read .law/context/current-system.json if present"
+    ],
+    "on_conflict": [
+      "CONSTITUTION.md wins over any contract",
+      "contracts win over doctrine prose",
+      "doctrine wins over charters",
+      "charters win over context snapshots",
+      "nothing in .law/ can override runtime-truth as evidence"
+    ]
+  }
+}

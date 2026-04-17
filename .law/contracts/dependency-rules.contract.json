@@ -1,0 +1,35 @@
+{
+  "$schema": "../schemas/dependency-rules.schema.json",
+  "schema_version": 1,
+  "owner": "architecture",
+  "purpose": "Allowed and forbidden dependency edges between domains. Any edge not declared allowed is implicitly forbidden.",
+  "authoritative": true,
+  "generated_from": {
+    "subagent": "architecture",
+    "run_at": null,
+    "kit_version": "1.0.0"
+  },
+  "last_validated_at": null,
+  "status": "skeleton",
+  "rules": {
+    "default_stance": "deny",
+    "default_stance_notes": "An edge not listed in 'allowed' is forbidden. 'forbidden' is an explicit list for edges that must be blocked with commentary.",
+    "cycles_forbidden": true,
+    "reverse_indirection_forbidden": true,
+    "reverse_indirection_notes": "A forbidden edge does not become allowed by routing through a re-export, facade, or event bus. Structural intent matters, not syntactic shape."
+  },
+  "allowed": [],
+  "forbidden": [],
+  "agent_directives": {
+    "before_adding_import": [
+      "Resolve the source and target domains",
+      "If the edge is not in 'allowed', stop",
+      "Do not add it to 'allowed' without an amendment"
+    ],
+    "on_discovering_existing_forbidden_edge": [
+      "Record it in .law/context/current-system.json under contradiction_map",
+      "Do not silently extend it",
+      "Raise as a stabilization task"
+    ]
+  }
+}
