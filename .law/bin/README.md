@@ -32,9 +32,9 @@ Bypass a single check when you know what you're doing:
 
 - `python3` — `verify-adapters`, `check-coupling`.
 - A JSON Schema validator for `validate-contracts`, picked in priority order:
-  1. `check-jsonschema` if installed (`pipx install check-jsonschema`)
-  2. `ajv` if installed globally (`npm install -g ajv-cli`)
-  3. `npx ajv-cli` automatically (zero pre-install; needs Node on PATH — covers most JS/TS projects)
+  1. `check-jsonschema` if installed (`pipx install check-jsonschema`) — handles `date-time` natively
+  2. `ajv` if installed globally (`npm install -g ajv-cli ajv-formats` — both packages required; `-c ajv-formats` is passed automatically)
+  3. `npx ajv-cli` automatically with `ajv-formats` pulled into the cache (zero pre-install; needs Node on PATH)
 - `git` — `check-coupling`.
 
 `validate-contracts` fails closed if none of the three is available. The other scripts degrade gracefully (missing contract → exit 0 or 2 with a clear message).

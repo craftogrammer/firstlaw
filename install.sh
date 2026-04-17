@@ -32,7 +32,24 @@ for arg in "$@"; do
   case "$arg" in
     --force) FORCE=1 ;;
     --help|-h)
-      sed -n '2,15p' "$0"
+      cat <<'EOF'
+firstlaw installer
+
+Usage:
+  curl -fsSL https://raw.githubusercontent.com/craftogrammer/firstlaw/main/install.sh | sh
+  curl -fsSL https://raw.githubusercontent.com/craftogrammer/firstlaw/main/install.sh | sh -s -- --force
+
+Behavior:
+  Fresh install writes 46 files (CONSTITUTION.md + KIT_VERSION + .law/).
+  --force upgrades KIT_FILES (constitution, scripts, schemas, doctrine,
+  bootstrap, subagent contracts, templates). TEMPLATE_FILES (.law/contracts/*
+  and .law/context/current-system.json + pending-questions.json) are NEVER
+  overwritten — they hold project law after bootstrap.
+
+  To reset contracts to skeleton, delete them manually and re-run install.
+
+After install, open a new chat with any agent and say: "read CONSTITUTION.md"
+EOF
       exit 0
       ;;
   esac

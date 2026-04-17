@@ -27,9 +27,9 @@ else
   cat >&2 <<'EOF'
 validate-contracts: no JSON Schema validator available.
 install one:
-  pipx install check-jsonschema    # Python path
-  npm install -g ajv-cli           # Node path (persistent)
-  (or have `npx` on PATH — we'll use `npx ajv-cli` transparently)
+  pipx install check-jsonschema                        # Python path (simplest)
+  npm install -g ajv-cli ajv-formats                   # Node path (persistent; both packages required)
+  (or have `npx` on PATH — we'll invoke ajv-cli + ajv-formats transparently)
 EOF
   exit 2
 fi
@@ -49,10 +49,14 @@ for contract in "$CONTRACTS_DIR"/*.contract.json; do
       check-jsonschema --schemafile "$schema" "$contract" >&2 || fail=1
       ;;
     ajv)
-      ajv validate -s "$schema" -d "$contract" --spec=draft2020 >&2 || fail=1
+      # -c ajv-formats loads the formats plugin (date-time, uri, etc.).
+      # Requires `npm install -g ajv-formats` alongside ajv-cli.
+      ajv validate -s "$schema" -d "$contract" --spec=draft2020 -c ajv-formats >&2 || fail=1
       ;;
     npx-ajv)
-      npx --yes ajv-cli validate -s "$schema" -d "$contract" --spec=draft2020 >&2 || fail=1
+      # --package=... pulls both ajv-cli and ajv-formats into the npx cache.
+      npx --yes --package=ajv-cli --package=ajv-formats ajv validate \
+        -s "$schema" -d "$contract" --spec=draft2020 -c ajv-formats >&2 || fail=1
       ;;
   esac
 done

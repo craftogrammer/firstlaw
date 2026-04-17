@@ -322,7 +322,7 @@ Firstlaw enforces properties of itself, not properties of your code. Be clear ab
 **Kit-enforced.** Three small programs in `.law/bin/`, composed however you want (git hooks, CI, shell pipelines, test runner, Makefile — the kit has no opinion):
 
 - `verify-adapters` — every adapter file listed in `project.contract.json#adapters.patched_files` still contains its `BEGIN/END .law/CONSTITUTION-FIRST` delimiter pair.
-- `validate-contracts` — every `.law/contracts/*.contract.json` validates against its declared `$schema`. Uses `check-jsonschema` or `ajv` if globally installed; otherwise falls back to `npx ajv-cli` (zero pre-install for any Node project). Fails closed only if none are available.
+- `validate-contracts` — every `.law/contracts/*.contract.json` validates against its declared `$schema`. Uses `check-jsonschema` if installed, otherwise `ajv + ajv-formats` if globally installed, otherwise falls back to `npx ajv-cli` with `ajv-formats` pulled in automatically. Fails closed only if none are available.
 - `check-coupling` — if a diff touches paths declared in `project.contract.json#enforcement.coupled_paths` without touching any file under `.law/contracts/`, flags the coupling violation. Opt-in; empty globs list = no-op.
 
 These are the parts of repo law whose enforcement does not depend on project semantics. The kit owns them end to end.

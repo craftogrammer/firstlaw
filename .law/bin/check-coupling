@@ -82,7 +82,7 @@ def main() -> int:
     for p in hits:
         print(f"  {p}", file=sys.stderr)
     print(
-        "review CONSTITUTION.md §9 mutation rules; amend the relevant contract, "
+        "review CONSTITUTION.md section 9 (mutation rules); amend the relevant contract, "
         "or bypass with `|| true` if intentional.",
         file=sys.stderr,
     )
