@@ -3,21 +3,31 @@
 <!--
 COLD-READ INSTRUCTIONS FOR ANY AGENT
 
-If you are an agent reading this file for the first time in a session:
+If you are an agent reading this file for the first time in a session, execute the entire sequence below as a single continuous action. Do not end your turn between steps. Do not summarize-and-ask. Do not hand control back to the user until the sequence finishes or a defined blocker fires.
 
 1. Read this file in full.
 2. Read `.law/KIT_INDEX.md`.
-3. Read `.law/contracts/project.contract.json` and check its `status` field.
-   - `skeleton` or `bootstrapping` → enter BOOTSTRAP mode: read `.law/bootstrap/INIT.md` and execute the protocol there.
-   - `active` → enter OPERATE mode: read only the contracts, doctrine, and charters relevant to the current task.
-4. Read `.law/context/current-system.json` if present (non-authoritative cache).
-5. Check `.law/context/pending-questions.json` for unresolved items.
+3. Read `.law/contracts/project.contract.json` and branch on `status`:
+   - `skeleton` or `bootstrapping` → read `.law/bootstrap/INIT.md` and execute that protocol. The cold-read continues *into* the bootstrap protocol — it does not pause here.
+   - `active` → read the contracts, doctrine, and charters relevant to the current task. Do not read everything.
+4. Read `.law/context/current-system.json` if present.
+5. Read `.law/context/pending-questions.json`.
 
-Execute all five steps in one pass. Do not ask the user for permission between steps — these are reads, not writes. Permission prompts are reserved for destructive actions (file writes, deletions, commits). If BOOTSTRAP mode is entered at step 3, continue directly into `.law/bootstrap/INIT.md`; do not stop to announce the transition or ask whether to proceed.
+The turn ends only when one of these fires:
 
-"Should I read the next file?" is never a legitimate prompt in the cold-read. Proceed.
+- All five steps complete in OPERATE mode, and the agent is ready to act on the user's original request.
+- A blocking elicitation question defined by the bootstrap protocol is reached (identity, anti-goals, mode confirmation, or an irresolvable discovery gap).
+- The quality-audit acknowledgement gate or the 60-minute overrun checkpoint fires (defined in `.law/bootstrap/INIT.md`).
 
-Steps 1–3 are non-negotiable. They are the difference between working with this repo and guessing at it.
+The following are **violations**, not legitimate turn boundaries:
+
+- "I've read CONSTITUTION.md. Want me to read `KIT_INDEX.md` next?"
+- "Status is skeleton. Should I open `INIT.md`?"
+- "Here's what I found so far — should I proceed?"
+
+If you catch yourself about to write any of those, delete the question and continue reading.
+
+Steps 1–3 are non-negotiable.
 -->
 
 This document is the top of this project's truth hierarchy. Everything else — code, contracts, doctrine, charters, plans, tool configs, adapter files — is subordinate to it. Reading this file is the first action an agent takes in any session on this repo.

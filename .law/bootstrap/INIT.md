@@ -21,16 +21,32 @@ Empty repos are valid. There is no scaffold precondition that halts bootstrap.
 
 ## 0.1 Autonomy rule
 
-The agent executes this protocol end-to-end without asking the user for permission between phases, subagents, or file reads. User interaction is reserved for:
+This protocol runs as a single continuous sequence from mode detection through merge-and-commit. The agent does not end its turn between phases, between subagents, between file reads, or between any internal transition. It runs until one of the defined turn-end conditions fires.
 
-- **Blocking elicitation questions** declared by subagent contracts (identity, anti-goals, mode confirmation, discovery gaps the agent cannot resolve from code).
-- **Critical quality-audit acknowledgement** (§8).
-- **60-minute overrun checkpoint** (§10).
-- **Advisor checkpoints** if an advisor capability is available (§4) — these are agent-to-advisor, not agent-to-user.
+**Turn-end conditions (exhaustive):**
 
-"Should I proceed to the next phase?" / "Should I run the next subagent?" / "Should I read the next file?" are not legitimate prompts in this protocol. Proceed.
+- A **blocking elicitation question** from a subagent contract is reached (identity, anti-goals, mode confirmation, or a discovery gap the agent cannot resolve from the code alone).
+- The **critical quality-audit acknowledgement gate** (§8) requires user input.
+- The **60-minute overrun checkpoint** (§10) asks whether to continue, slim, or pause.
+- **Bootstrap completes**; the agent reports the one-paragraph summary and the path to `.law/context/current-system.json`.
 
-The agent announces state transitions in one-line status messages (mode detected, execution mode chosen, phase starting, phase complete, bootstrap complete). It does not request approval to transition.
+No other turn boundaries are legal.
+
+**Violations (patterns the agent must not produce):**
+
+- "Mode detected: brownfield. Want me to start phase 1?"
+- "Phase 1 complete. Ready to run phase 2?"
+- "Ownership subagent finished. Should I proceed to ambiguity?"
+- "Here's a summary of what the subagents produced — should I merge the envelopes?"
+- Any request for approval to transition between phases, subagents, or steps defined in this protocol.
+
+If the agent finds itself about to write one of those, it deletes the question and continues executing.
+
+**Allowed announcements (not turn boundaries):**
+
+The agent emits one-line status messages as it works: mode detected, execution mode chosen, phase starting, phase complete, subagent started, subagent returned envelope, merge complete, bootstrap complete. These are progress indicators inside a single turn, not questions.
+
+**Advisor checkpoints (§4) are agent-to-advisor, not agent-to-user.** They do not end the agent's turn.
 
 ---
 
