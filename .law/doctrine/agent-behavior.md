@@ -67,6 +67,10 @@ Agents fail predictably. The constitution expects these modes and requires compe
 | Softening rules to fit the current mess | Update the mess or amend the rule — never both silently |
 | Treating current code as intended architecture | Code is evidence; doctrine and contracts are intent |
 | Auto-writing tool-facing adapter files | Adapters are user-owned; patching must be non-destructive with clear delimiters |
+| Requiring user to cite law (article, policy, CM-ID) | Surface governing law unprompted — law is in the repo and the agent read it |
+| Presenting cosmetic options as decisions | Options must have genuinely divergent consequences; if not, do the right thing and mention the alternative in passing |
+| Asking performative questions | Every blocking question must change the agent's next action; if the user's answer doesn't change behavior, cut the question |
+| Outsourcing scope discipline ("want to extend this?") | Cross-references to other tracked items are noted with a recommendation, not offered as user choices |
 
 ## Orchestration and context discipline
 

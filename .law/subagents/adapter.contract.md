@@ -41,6 +41,7 @@ Any file flagged by ≥2 signals is a candidate. Single-signal candidates are su
 - **Confirm patch targets** — present the candidate list to the user, confirm which to patch. (blocking for any candidate the subagent proposes to patch)
 - **Approve or edit the header text** — the constitution-first block is shown, user approves or edits (non-blocking; default template from `.law/adapters.md`)
 - **Unknown patterns** — if a file matches heuristics but no known tool, ask the user what tool it serves (non-blocking; record the user's answer for future runs)
+- **Offer pre-commit hook install** — if the repo has `.git/` and `.git/hooks/pre-commit` does not already invoke `.law/bin/*` scripts, offer to install `.law/git-hooks/pre-commit.sample` at `.git/hooks/pre-commit`. (non-blocking) If the user accepts, install; if the user declines, record the decline as a non-blocking entry in `.law/context/pending-questions.json` so future sessions do not re-ask.
 
 ## 6. Produces (non-destructive patching spec)
 
@@ -62,6 +63,15 @@ Patches also:
 
 - `project.contract.json#adapters.patched_files[]` — record each patch with timestamp and discovery method
 - `.law/adapters.md` — append to discovery log section if new patterns were identified
+
+Pre-commit hook installation (if accepted in §5):
+
+1. Confirm `.git/hooks/pre-commit` does not exist, or exists and does not already invoke `.law/bin/*` scripts. Never overwrite an existing hook blindly — if one is present, show its content to the user and ask whether to replace, chain, or skip.
+2. Copy `.law/git-hooks/pre-commit.sample` to `.git/hooks/pre-commit` and make it executable.
+3. Run the new hook once against the current working tree. If it fails, do not leave a failing hook in place — revert the install and surface the failure to the user.
+4. Record the install in the envelope.
+
+If the repo uses `core.hooksPath` pointing elsewhere (e.g. a lefthook or husky setup), do not fight that system. Note the detection, offer to either install into the configured hooks path or skip, and record the user's choice.
 
 ## 7. Constitution-first block content (template)
 
