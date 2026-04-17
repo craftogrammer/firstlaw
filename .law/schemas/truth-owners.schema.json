@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://repo-constitution-kit/schemas/truth-owners.schema.json",
+  "$id": "https://firstlaw/schemas/truth-owners.schema.json",
   "title": "Truth owners contract",
   "description": "Declares the single writer for each piece of runtime truth. Readers may be many; writers are one.",
   "type": "object",

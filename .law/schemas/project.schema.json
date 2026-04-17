@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://repo-constitution-kit/schemas/project.schema.json",
+  "$id": "https://firstlaw/schemas/project.schema.json",
   "title": "Project contract",
   "description": "Top-level identity, mode, pointers, and stack/tooling for a project governed by the constitution kit.",
   "type": "object",

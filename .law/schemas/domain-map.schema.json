@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://repo-constitution-kit/schemas/domain-map.schema.json",
+  "$id": "https://firstlaw/schemas/domain-map.schema.json",
   "title": "Domain map contract",
   "description": "Declares domains that exist in the project, their boundaries, and what is explicitly not a domain.",
   "type": "object",

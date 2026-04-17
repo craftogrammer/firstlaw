@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://repo-constitution-kit/schemas/quality-audit.schema.json",
+  "$id": "https://firstlaw/schemas/quality-audit.schema.json",
   "title": "Quality audit contract",
   "description": "Advisory findings from the quality-audit subagent. Advisory-only: severity informs, never halts constitution adoption.",
   "type": "object",

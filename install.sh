@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# repo-constitution-kit installer
+# firstlaw installer
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/<owner>/<repo>/main/install.sh | sh
@@ -18,7 +18,7 @@ set -eu
 # ---------- configuration ----------
 
 # EDIT THIS to the raw base URL of your kit repo before publishing.
-KIT_BASE_URL="${KIT_BASE_URL:-https://raw.githubusercontent.com/YOUR_USER/repo-constitution-kit/main}"
+KIT_BASE_URL="${KIT_BASE_URL:-https://raw.githubusercontent.com/craftogrammer/firstlaw/main}"
 
 FORCE=0
 for arg in "$@"; do
@@ -107,7 +107,7 @@ fi
 
 # ---------- install ----------
 
-log "installing repo-constitution-kit from: $KIT_BASE_URL"
+log "installing firstlaw from: $KIT_BASE_URL"
 
 for rel in $FILES; do
   fetch "$KIT_BASE_URL/$rel" "./$rel"

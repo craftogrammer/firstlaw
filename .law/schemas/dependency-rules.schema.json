@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://repo-constitution-kit/schemas/dependency-rules.schema.json",
+  "$id": "https://firstlaw/schemas/dependency-rules.schema.json",
   "title": "Dependency rules contract",
   "description": "Allowed and forbidden dependency edges between domains. Default stance is deny.",
   "type": "object",

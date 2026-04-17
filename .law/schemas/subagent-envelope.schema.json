@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://repo-constitution-kit/schemas/subagent-envelope.schema.json",
+  "$id": "https://firstlaw/schemas/subagent-envelope.schema.json",
   "title": "Subagent return envelope",
   "description": "Structured return value from every subagent. The orchestrator never ingests raw research; only envelopes.",
   "type": "object",

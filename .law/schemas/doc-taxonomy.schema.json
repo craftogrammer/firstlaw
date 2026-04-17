@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://repo-constitution-kit/schemas/doc-taxonomy.schema.json",
+  "$id": "https://firstlaw/schemas/doc-taxonomy.schema.json",
   "title": "Doc taxonomy contract",
   "description": "Declares the document layers that exist in the repo, their mutability, location rules, and what happens when a document cannot be classified.",
   "type": "object",

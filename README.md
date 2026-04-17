@@ -1,4 +1,4 @@
-# repo-constitution-kit
+# firstlaw
 
 A template for installing **repo law** into a project.
 
@@ -23,13 +23,13 @@ This kit gives a project a stable, researched, machine-readable source of truth 
 From any project root (empty folder is fine):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/YOUR_USER/repo-constitution-kit/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/craftogrammer/firstlaw/main/install.sh | sh
 ```
 
 Or with force (overwrite existing files):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/YOUR_USER/repo-constitution-kit/main/install.sh | sh -s -- --force
+curl -fsSL https://raw.githubusercontent.com/craftogrammer/firstlaw/main/install.sh | sh -s -- --force
 ```
 
 Then open a new chat with any coding agent and say:
