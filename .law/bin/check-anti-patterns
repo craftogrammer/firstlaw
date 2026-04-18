@@ -1,0 +1,207 @@
+#!/bin/sh
+"exec" "python3" "$0" "$@"
+""":"
+:<<'END_SHELL_CLOAK'
+"""
+"""check-anti-patterns — enforce project-declared anti-goal + anti-pattern regexes.
+
+Kit ships the scanner; the project declares what counts as a violation. Both
+sources live in `.law/contracts/project.contract.json`:
+
+  - `identity.anti_goals[]` — each entry may be a bare string (legacy) or an
+    object `{goal, reason, forbidden_patterns?: [regex, ...]}`. Every
+    `forbidden_patterns` regex is matched line-by-line against every source
+    file; any match is an error-severity violation.
+  - `enforcement.anti_patterns[]` — list of
+    `{name, pattern, severity: "error"|"warning", applies_to?: [glob, ...],
+      allowlist?: [path, ...], rationale?: str}`. `applies_to` narrows the
+    file set via globs; `allowlist` exempts explicit file paths. Severity
+    `error` contributes to exit 1; `warning` prints to stderr only.
+
+Empty fields = no-op exit 0. Silent on clean. Walks the same source set as
+check-coupling (TS/JS/Py/SQL) and skips `.law/`, `node_modules/`, `.git/`,
+`__pycache__/`, `dist/`, `build/`.
+
+Exit codes:
+  0 — clean, no error-severity violations, or nothing to enforce.
+  1 — at least one error-severity match.
+  2 — contract parse error or regex compile error.
+"""
+import json
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(".")
+CONTRACT = Path(".law/contracts/project.contract.json")
+
+SOURCE_EXTS = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".py", ".sql"}
+SKIP_DIRS = {".law", "node_modules", ".git", "__pycache__", "dist", "build"}
+
+
+def glob_to_regex(pattern: str) -> re.Pattern:
+    """Translate a shell-style glob to an anchored regex.
+
+    `**` matches any subpath (including `/`). `*` does not cross `/`.
+    `?` matches a single non-`/` character. All other characters are literal.
+    """
+    i = 0
+    out = []
+    while i < len(pattern):
+        if pattern[i : i + 2] == "**":
+            out.append(".*")
+            i += 2
+        elif pattern[i] == "*":
+            out.append("[^/]*")
+            i += 1
+        elif pattern[i] == "?":
+            out.append("[^/]")
+            i += 1
+        else:
+            out.append(re.escape(pattern[i]))
+            i += 1
+    return re.compile("^" + "".join(out) + "$")
+
+
+def walk_sources(root: Path):
+    for p in root.rglob("*"):
+        if p.suffix not in SOURCE_EXTS or not p.is_file():
+            continue
+        if any(part in SKIP_DIRS for part in p.relative_to(root).parts):
+            continue
+        yield p
+
+
+def rel_posix(p: Path) -> str:
+    try:
+        return p.relative_to(ROOT).as_posix()
+    except ValueError:
+        return p.as_posix()
+
+
+def compile_regex(pattern: str, label: str) -> re.Pattern:
+    try:
+        return re.compile(pattern)
+    except re.error as exc:
+        raise ValueError(f"{label}: cannot compile regex `{pattern}`: {exc}") from exc
+
+
+def collect_anti_goal_patterns(data: dict) -> list[tuple[str, re.Pattern, int]]:
+    """Return [(goal_label, compiled_regex, idx_within_goal), ...]."""
+    out: list[tuple[str, re.Pattern, int]] = []
+    for entry in data.get("identity", {}).get("anti_goals", []) or []:
+        if not isinstance(entry, dict):
+            continue
+        goal = entry.get("goal") or ""
+        patterns = entry.get("forbidden_patterns") or []
+        if not isinstance(patterns, list):
+            continue
+        for idx, pat in enumerate(patterns):
+            if not isinstance(pat, str) or not pat:
+                continue
+            rx = compile_regex(pat, f"anti-goal `{goal}` pattern #{idx}")
+            out.append((goal, rx, idx))
+    return out
+
+
+def collect_anti_patterns(data: dict) -> list[dict]:
+    """Return [{name, rx, severity, applies_to: [regex], allowlist: {str}, rationale}, ...]."""
+    out: list[dict] = []
+    entries = data.get("enforcement", {}).get("anti_patterns", []) or []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        pattern = entry.get("pattern")
+        if not isinstance(pattern, str) or not pattern:
+            continue
+        name = entry.get("name") or "<unnamed>"
+        severity = entry.get("severity")
+        if severity not in ("error", "warning"):
+            raise ValueError(
+                f"anti-pattern `{name}`: severity must be \"error\" or \"warning\", got {severity!r}"
+            )
+        applies_to_raw = entry.get("applies_to") or []
+        allowlist_raw = entry.get("allowlist") or []
+        applies_to = [
+            glob_to_regex(g) for g in applies_to_raw if isinstance(g, str) and g
+        ]
+        allowlist = {g for g in allowlist_raw if isinstance(g, str) and g}
+        rx = compile_regex(pattern, f"anti-pattern `{name}`")
+        out.append(
+            {
+                "name": name,
+                "rx": rx,
+                "severity": severity,
+                "applies_to": applies_to,
+                "allowlist": allowlist,
+                "rationale": entry.get("rationale") or "",
+            }
+        )
+    return out
+
+
+def main() -> int:
+    if not CONTRACT.exists():
+        return 0
+    try:
+        data = json.loads(CONTRACT.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        print(f"check-anti-patterns: cannot parse {CONTRACT}: {exc}", file=sys.stderr)
+        return 2
+
+    try:
+        goal_patterns = collect_anti_goal_patterns(data)
+        anti_patterns = collect_anti_patterns(data)
+    except ValueError as exc:
+        print(f"check-anti-patterns: {exc}", file=sys.stderr)
+        return 2
+
+    if not goal_patterns and not anti_patterns:
+        return 0
+
+    error_lines: list[str] = []
+    warning_lines: list[str] = []
+
+    for src in walk_sources(ROOT):
+        rel = rel_posix(src)
+        try:
+            text = src.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+
+        # Pre-filter anti_patterns per file so line-iteration stays O(file_lines).
+        active_aps = []
+        for ap in anti_patterns:
+            if ap["applies_to"] and not any(r.match(rel) for r in ap["applies_to"]):
+                continue
+            if rel in ap["allowlist"]:
+                continue
+            detail = ap["rationale"] or "see project.contract.json#enforcement.anti_patterns"
+            active_aps.append((ap, detail))
+
+        if not goal_patterns and not active_aps:
+            continue
+
+        for lineno, line in enumerate(text.splitlines(), start=1):
+            for goal, rx, idx in goal_patterns:
+                if rx.search(line):
+                    error_lines.append(
+                        f"{rel}:{lineno} matches anti-goal \"{goal}\" — pattern {idx}"
+                    )
+            for ap, detail in active_aps:
+                if ap["rx"].search(line):
+                    bucket = error_lines if ap["severity"] == "error" else warning_lines
+                    bucket.append(
+                        f"{rel}:{lineno} matches {ap['name']} ({ap['severity']}) — {detail}"
+                    )
+
+    for w in warning_lines:
+        print(w, file=sys.stderr)
+    for e in error_lines:
+        print(e, file=sys.stderr)
+
+    return 1 if error_lines else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
