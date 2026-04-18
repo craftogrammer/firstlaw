@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://firstlaw/schemas/ambiguity-policies.schema.json",
   "title": "Ambiguity policies contract",
-  "description": "Declares what an agent must do when a specific class of ambiguity is observed. Ambiguity is never resolved by taste.",
+  "description": "Declares what an agent must do on observing a specific class of ambiguity. Taste never resolves ambiguity.",
   "type": "object",
   "required": [
     "schema_version",

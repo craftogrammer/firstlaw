@@ -1,8 +1,8 @@
 {
-  "$comment": "Accumulator for non-blocking questions raised during bootstrap or operate mode, and for deferred blocking questions when the user is temporarily unavailable. Orchestrator surfaces these at session boundaries.",
+  "$comment": "Accumulator for non-blocking questions from bootstrap or operate mode, and for blocking questions deferred when the user is unavailable. Orchestrator surfaces these at session boundaries.",
   "schema_version": 1,
   "owner": "agent-regenerable",
-  "purpose": "Accumulate questions raised by subagents or the orchestrator that do not halt the current session but require resolution.",
+  "purpose": "Accumulate questions from subagents or the orchestrator that do not halt the current session but require resolution.",
   "authoritative": false,
   "questions": [],
   "agent_directives": {

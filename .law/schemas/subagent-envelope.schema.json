@@ -61,7 +61,7 @@
     },
     "judgment": {
       "type": "array",
-      "description": "Inferences, interpretations, assumptions. Must be explicitly labelled as such.",
+      "description": "Inferences, interpretations, assumptions. Label them explicitly as such.",
       "items": {
         "type": "object",
         "required": ["id", "statement", "basis"],

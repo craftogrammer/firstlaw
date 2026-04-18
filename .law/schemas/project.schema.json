@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://firstlaw/schemas/project.schema.json",
   "title": "Project contract",
-  "description": "Top-level identity, mode, pointers, and stack/tooling for a project governed by the constitution kit.",
+  "description": "Top-level identity, mode, pointers, and stack/tooling for a project the constitution kit governs.",
   "type": "object",
   "required": [
     "schema_version",
