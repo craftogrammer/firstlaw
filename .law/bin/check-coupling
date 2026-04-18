@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""check-coupling — flag source-code changes without a matching contract amendment.
+"""check-coupling — flag source-code changes lacking a matching contract amendment.
 
 Reads `.law/contracts/project.contract.json#enforcement.coupled_paths` (glob list,
 opt-in, default empty). Inspects `git diff --cached --name-only` (falls back to
-`git diff HEAD`). If any changed path matches a coupled glob and no file under
-`.law/contracts/` was touched in the same diff, prints the hits and exits 1.
+`git diff HEAD`). When a changed path matches a coupled glob and no file under
+`.law/contracts/` appears in the same diff, prints the hits and exits 1.
 
 `**` matches any subpath. `*` does not cross `/`. `?` matches a single character.
 Empty coupled_paths list (default) = no-op.

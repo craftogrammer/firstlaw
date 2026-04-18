@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""check-counts — verify declared counts in current-system.json match reality.
+"""check-counts — confirm declared counts in current-system.json match reality.
 
 Catches drift between the prose/structured counts in
 `.law/context/current-system.json` and the actual list lengths they describe.
 Two classes of check:
 
-1. Structured count fields: if `summary.open_blockers_count` is declared,
-   verify it matches the count of `blocking: true` entries in
+1. Structured count fields: when `summary.open_blockers_count` is declared,
+   confirm it matches the count of `blocking: true` entries in
    `.law/context/pending-questions.json`.
 
-2. Prose count drift: if `summary.one_line` contains a substring of shape
-   `<N> open contradictions`, verify it matches the count of entries in
+2. Prose count drift: when `summary.one_line` contains a substring of shape
+   `<N> open contradictions`, confirm it matches the count of entries in
    `contradiction_map` whose `status` is not `"resolved"`.
 
-Exit 0 on pass, non-zero on any mismatch. Silent on pass.
+Exits 0 on pass, non-zero on any mismatch. Silent on pass.
 Graceful no-op when files or fields are absent.
 """
 import json

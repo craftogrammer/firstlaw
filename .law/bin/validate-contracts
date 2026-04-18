@@ -2,11 +2,11 @@
 # validate-contracts — validate every .law/contracts/*.contract.json against
 # its declared schema.
 #
-# Picks the first available validator:
+# Selects the first available validator:
 #   check-jsonschema   (pipx install check-jsonschema)
 #   ajv                (npm install -g ajv-cli)
 #
-# Fails closed if neither is present.
+# Fails closed when neither exists.
 
 set -eu
 

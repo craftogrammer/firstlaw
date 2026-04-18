@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // check-dep-direction.example — cross-domain import enforcement.
 //
-// This is an EXAMPLE. Copy into your project (typically scripts/) and
-// replace the `classifyLayer` function with your real layer classifier.
-// The contract-reading and violation-reporting scaffold stays the same.
+// EXAMPLE. Copy into your project (typically scripts/) and replace the
+// `classifyLayer` function with your real layer classifier. The
+// contract-reading and violation-reporting scaffold stays the same.
 //
 // Default behaviour: classifies each source file by its top-level folder
 // name (e.g. src/shell/, src/domain/, src/shared/) matching declared
@@ -11,11 +11,11 @@
 // statements and checks each edge against the allowed/forbidden lists.
 //
 // Limitations this example accepts:
-//   - top-level folder only; doesn't handle path aliases (@/shell/...)
+//   - top-level folder only; skips path aliases (@/shell/...)
 //   - regex import extraction; misses dynamic imports, re-exports
 //   - TS/JS only
 // Swap in per-project semantics (path alias resolver, AST parser,
-// multi-language extractor) when adopting.
+// multi-language extractor) on adoption.
 //
 // Run: node scripts/check-dep-direction.mjs
 

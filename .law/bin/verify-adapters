@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""verify-adapters — check adapter projection blocks are intact.
+"""verify-adapters — confirm adapter projection blocks remain intact.
 
 Reads `.law/contracts/project.contract.json#adapters.patched_files[].path`.
-For each path, confirms the file exists and still contains the exact
+For each path, confirms the file exists and retains the exact
 `<!-- BEGIN .law/CONSTITUTION-FIRST -->` and `<!-- END .law/CONSTITUTION-FIRST -->`
 delimiter pair.
 
-Exit 0 on pass, non-zero on any failure. Silent on pass.
+Exits 0 on pass, non-zero on any failure. Silent on pass.
 """
 import json
 import sys
