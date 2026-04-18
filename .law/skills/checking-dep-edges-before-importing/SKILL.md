@@ -72,6 +72,11 @@ Before introducing any cross-domain edge:
 | "It's temporary — I'll remove it after the spike." | Temporary edges calcify. Raise the blocker; do not type the import. |
 | "The target already imports from my domain, so the edge already exists in reverse." | `cycles_forbidden: true`. An existing reverse edge makes this forward edge worse, not permitted. |
 | "Nobody has defined domains yet, so nothing is cross-domain." | Halt. Surface the gap. Proceeding before `domain-map.contract.json` is populated violates §8 mode obligations. |
+| "I'll import the DB driver directly (`pg`, `prisma`, etc.) — it's a library, not the persistence domain." | Third-party packages that semantically *are* the forbidden target count as crossing the edge. The rule binds to structural intent, not the package name. §6 'structural intent matters' applies. Halt. |
+| "Health-check is infrastructure — exempt from layer rules by nature." | No CONSTITUTION article exempts diagnostic or infrastructure code from layer rules. If an edge is forbidden, it is forbidden for infrastructure too. §6 admits no infrastructure carve-out. |
+| "Make it a middleware — middleware is framework-level plumbing, not a domain module." | Middleware that calls across a forbidden edge violates §6 identically to any other call site. Framework position is not a layering escape. Classify by resolved target, not by hook name. |
+| "Pull the connection pool from `config/` — `config/` isn't a declared domain." | Generic containers (`config/`, `runtime/`, `bootstrap/`) laundering forbidden edges is forbidden by §5's generic-container rule and §6's 'structural intent matters' clause. The edge is where the pool is wired, not where the folder sits. |
+| "It's a read-only probe with no side effects — a pure read can't create architectural coupling." | Coupling is about dependency direction, not mutation. A read-only call from the higher layer to the lower layer is the same cross-layer dependency as a write. §6 binds reads and writes identically. |
 
 ## Red flags
 
@@ -88,6 +93,11 @@ Halt and re-check if any of these appear:
 - a test file whose imports span more domains than the module under test declares
 - `// eslint-disable`, `# noqa`, or `@ts-ignore` on an import line
 - `.law/bin/validate-contracts` or cross-domain import gates invoked with `|| true`, `--no-verify`, or skipped in CI
+- the agent thinks "the `pg` import isn't really crossing the edge because it's a library"
+- the agent thinks "health-check is infrastructure, layer rules don't bind"
+- the agent thinks "make it a middleware and the layer rules don't apply"
+- the agent thinks "pull it from `config/` — it isn't a declared domain"
+- the agent thinks "it's read-only so there's no architectural coupling"
 
 ## Machine-readable contract
 
