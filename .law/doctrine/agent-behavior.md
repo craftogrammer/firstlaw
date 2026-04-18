@@ -1,7 +1,7 @@
 # Agent behavior doctrine
 
 > **Layer:** doctrine · **Authority:** elaboration · **Mutability:** timeless until amended
-> How any agent — and any tired human acting like an agent — must behave when working in this repo. May not contradict the constitution or any contract.
+> How any agent — and any tired human acting like an agent — must behave when working in this repo. Must not contradict the constitution or any contract.
 
 ## Session start
 
@@ -11,38 +11,38 @@
    - `skeleton` or `bootstrapping` → enter **bootstrap mode** via `.law/bootstrap/INIT.md`.
    - `active` → enter **operate mode**.
 4. Read `.law/context/current-system.json` if present.
-5. Read the specific doctrine, charter, and contract files relevant to the task. Do not read everything; do not read nothing.
+5. Read the doctrine, charter, and contract files the task requires. Do not read everything; do not read nothing.
 
 ## Two-mode behavior
 
 ### Bootstrap mode
 
-The repo's law is not yet defined. The agent runs `.law/bootstrap/INIT.md`, which orchestrates seven subagents (or their sequential equivalents, depending on environment capability). The agent's job is to produce filled contracts grounded in real project evidence and live research, not training-era guesswork.
+The repo's law is not yet defined. The agent runs `.law/bootstrap/INIT.md`, which orchestrates seven subagents (or their sequential equivalents, depending on environment capability). The agent's job: produce filled contracts grounded in real project evidence and live research, not training-era guesswork.
 
 ### Operate mode
 
-Law is in place. The agent consults contracts before acting, refuses changes that would violate them, and proposes amendments when reality has shifted.
+Law is in place. The agent consults contracts before acting, refuses changes that would violate them, and proposes amendments when reality shifts.
 
 ## Evidence vs judgment
 
-Every non-trivial claim an agent makes about the repo is either:
+Every non-trivial claim an agent makes about the repo falls into one of two classes:
 
 - **evidence** — directly observable in the code, in runtime state, in declared law, or in a contract
 - **judgment** — inferred, interpreted, or assumed
 
-Claims must be labelled. Evidence is actionable. Judgment is a hypothesis and must be treated as such. Agents must never present judgment as evidence. Agents must never promote judgment to law without an amendment step.
+Agents must label claims. Evidence is actionable. Judgment is a hypothesis and agents must treat it as such. Agents must never present judgment as evidence. Agents must never promote judgment to law without an amendment step.
 
 The `evidence_or_judgment` field exists on many contract entries for this reason. Fill it honestly.
 
 ## Research freshness (hard rule)
 
-Any claim about current community practice, state of the art, library state, or modern patterns must be grounded in live web research with retrieval dates. Training-only claims on these topics are rejected. This rule exists because the kit is adopted to set law; stale law is worse than no law.
+Any claim about current community practice, state of the art, library state, or modern patterns must rest on live web research with retrieval dates. Training-only claims on these topics fail. This rule exists because the kit sets law; stale law is worse than no law.
 
 Every subagent deposits its research log at `.law/context/research/<subagent>-<YYYY-MM-DD>.json`. The orchestrator never ingests raw logs; it ingests envelopes.
 
 ## Ambiguity is a halt, not a hint
 
-See `.law/contracts/ambiguity-policies.contract.json`. When an ambiguity class is observed:
+Consult `.law/contracts/ambiguity-policies.contract.json`. On observing an ambiguity class:
 
 1. stop the in-flight task
 2. record the observation in `.law/context/current-system.json#contradiction_map`
@@ -53,7 +53,7 @@ Agents must not resolve ambiguity by preference, by training bias, or by "this i
 
 ## Known failure modes
 
-Agents fail predictably. The constitution expects these modes and requires compensation.
+Agents fail predictably. The constitution anticipates these modes and requires compensation.
 
 | Failure mode | Required compensation |
 |---|---|
@@ -74,26 +74,26 @@ Agents fail predictably. The constitution expects these modes and requires compe
 
 ## Orchestration and context discipline
 
-The orchestrator (main chat) delegates deep reads to subagents. The orchestrator never ingests raw research; only structured envelopes (`schemas/subagent-envelope.schema.json`). This is not an optimization — it is how the orchestrator's context stays small enough to reason across all seven workstreams in one session.
+The orchestrator (main chat) delegates deep reads to subagents. The orchestrator never ingests raw research; only structured envelopes (`schemas/subagent-envelope.schema.json`). Not an optimization — this is how the orchestrator's context stays small enough to reason across all seven workstreams in one session.
 
 If the environment cannot spawn subagents, the degraded mode in `INIT.md` applies: run phases sequentially in the main chat, and summarize each phase into an envelope before the next phase begins. The summary-to-envelope step is mandatory.
 
 ## Advisor capability
 
-Some environments expose an "advisor" capability (for example, Anthropic's advisor tool, or a planner-model consult). When available, subagents may use it at two checkpoints: before committing their primary recommendation, and before finalizing their envelope. Cap: 2-3 advisor calls per subagent. Advisor failures (rate limit, unavailability) are non-blocking — the subagent proceeds.
+Some environments expose an "advisor" capability (for example, Anthropic's advisor tool, or a planner-model consult). When available, subagents may invoke it at two checkpoints: before committing their primary recommendation, and before finalizing their envelope. Cap: 2-3 advisor calls per subagent. Advisor failures (rate limit, unavailability) do not block — the subagent proceeds.
 
-The kit does not hardcode any specific advisor API. The abstraction is: "consult a higher-tier reviewer with the current transcript, receive a short plan or correction."
+The kit hardcodes no specific advisor API. The abstraction: "consult a higher-tier reviewer with the current transcript, receive a short plan or correction."
 
 ## Session close
 
 Before ending a session that changed runtime truth:
 
-1. Update any contract affected by the change, in the same commit.
+1. Update every contract the change affects, in the same commit.
 2. Regenerate `.law/context/current-system.json`.
-3. If the session closed out a project-owned plan, follow the project's plan-closure process. The kit does not own plan lifecycle.
+3. If the session closed a project-owned plan, follow the project's plan-closure process. The kit does not own plan lifecycle.
 
 ## Tool-facing adapter files
 
-`CLAUDE.md`, `AGENTS.md`, `codex.md`, Cursor rules, and equivalents are **adapters**, not law. They are non-authoritative projections. On any conflict between an adapter and repo law, the constitution wins and the adapter is defective.
+`CLAUDE.md`, `AGENTS.md`, `codex.md`, Cursor rules, and equivalents are **adapters**, not law. They project law without authority. On any conflict between an adapter and repo law, the constitution wins and the adapter is defective.
 
-Agents never overwrite user-owned adapter content. Patches are confined to a clearly delimited block. See `.law/adapters.md`.
+Agents never overwrite user-owned adapter content. Patches stay confined to a clearly delimited block. Consult `.law/adapters.md`.
