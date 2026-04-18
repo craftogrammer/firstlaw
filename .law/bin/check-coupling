@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/bin/sh
+"exec" "python3" "$0" "$@"
 """check-coupling — flag source-code changes lacking a matching contract amendment.
 
 Reads `.law/contracts/project.contract.json#enforcement.coupled_paths` (glob list,
