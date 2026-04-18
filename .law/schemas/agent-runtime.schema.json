@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://firstlaw/schemas/agent-runtime.schema.json",
+  "title": "Agent runtime contract",
+  "description": "Declares runtime-specific facts (skill discovery path, skill load model) for each AI-coding runtime the kit targets. Single authoritative source so prose across skills, doctrine, and adapters stops drifting from live docs.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "authoritative",
+    "last_validated_at",
+    "runtimes"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "owner": { "type": "string" },
+    "purpose": { "type": "string" },
+    "authoritative": { "type": "boolean" },
+    "generated_from": {
+      "type": "object",
+      "required": ["subagent", "run_at"],
+      "properties": {
+        "subagent": { "type": "string" },
+        "run_at": { "type": ["string", "null"], "format": "date-time" },
+        "kit_version": { "type": ["string", "null"] }
+      }
+    },
+    "last_validated_at": { "type": ["string", "null"], "format": "date-time" },
+    "status": {
+      "type": "string",
+      "enum": ["skeleton", "bootstrapping", "active", "stale"]
+    },
+    "runtimes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "skill_discovery_path",
+          "skill_load_model",
+          "retrieved_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "display_name": { "type": "string" },
+          "skill_discovery_path": { "type": "string" },
+          "skill_load_model": { "type": "string" },
+          "docs_url": { "type": "string" },
+          "retrieved_at": { "type": "string", "format": "date" },
+          "requires_reload_after": {
+            "type": "array",
+            "items": { "type": "string" },
+            "default": []
+          }
+        }
+      }
+    }
+  }
+}
