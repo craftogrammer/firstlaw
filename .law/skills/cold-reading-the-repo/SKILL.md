@@ -1,6 +1,6 @@
 ---
 name: cold-reading-the-repo
-description: Use at the start of any session in a firstlaw-governed repo (root contains `CONSTITUTION.md`) — before answering the user's question, reading arbitrary files, planning, acting, or even clarifying. Fires on the first user message of a conversation. Fires again after any context reset or compaction. Symptoms that the skill was skipped: the agent opened a source file before running `.law/bin/` scripts; the agent asked "Want me to read `KIT_INDEX.md` next?"; the agent branched on `project.contract.json#status` without reading it; the agent answered a "simple" question without consulting `.law/context/pending-questions.json`.
+description: Use at the start of any session in a firstlaw-governed repo (root contains `CONSTITUTION.md`) — before answering the user's question, reading arbitrary files, planning, acting, or even clarifying. Fires on the first user message of a conversation. Fires again after any context reset or compaction. Symptoms that the skill was skipped: the agent opened a source file before running `.law/bin/` scripts; the agent asked "Want me to read `KIT_INDEX.md` next?"; the agent branched on `project.contract.json#status` without reading it; the agent answered a "simple" question without consulting `.law/context/pending-questions.json`. Also use when the user references kit-version drift, healing, setup, or when a session starts in a repo where `.law/bin/check-setup` has never been run.
 ---
 
 # Cold Reading The Repo
@@ -46,6 +46,7 @@ The sequence, verbatim from `CONSTITUTION.md` §0-adjacent COLD-READ PROTOCOL:
 - Branch strictly on `.law/contracts/project.contract.json#status`. On `skeleton` or `bootstrapping`, follow `.law/bootstrap/INIT.md` as a continuation of the same turn.
 - Consult `.law/context/pending-questions.json` for blocking entries and surface every `blocking: true` entry to the user before acting on the original request.
 - Execute `.law/bin/verify-adapters`, `.law/bin/validate-contracts`, and `.law/bin/check-counts`. Halt on any non-zero exit and report the failures verbatim.
+- run `.law/bin/check-setup` before the detection checks; allow it to self-commit heals when the working tree is clean; surface any irreducible items before the detection phase
 - Record a single-line status announcement per step (e.g. "CONSTITUTION.md loaded", "status=skeleton, entering bootstrap", "verify-adapters OK") — these are progress indicators, not turn boundaries.
 - Treat shell unavailability as a narrow exception: skip the `.law/bin/` step, note the skip in the session output, and continue.
 - Resume the sequence from the last incomplete step after any defined blocker clears.
@@ -73,6 +74,7 @@ The sequence, verbatim from `CONSTITUTION.md` §0-adjacent COLD-READ PROTOCOL:
 - *"I'll summarize progress halfway through as a courtesy."* — `CONSTITUTION.md` line 6 forbids mid-sequence summary-and-ask. Courtesy to the user is executing the protocol correctly, not narrating a pause that does not exist.
 - *"The `.law/bin/` scripts always pass on this repo."* — Past green runs do not bind the current state. Non-zero exit is a defined halt condition. Run them.
 - *"Shell is slow, I'll skip the scripts this once."* — Shell cost is not a defined exception. Only shell **unavailability** permits the narrow skip, and the skip is recorded.
+- *"check-setup heals feel invasive — I will apply them manually."* — The script is idempotent, auto-commits only when the tree is clean, and records every heal in the amendment log. Manual editing bypasses the audit trail and violates §9 mutation rules.
 
 ## Red flags
 
@@ -131,8 +133,16 @@ sequence:
   - id: 6
     action: execute
     commands:
+      - .law/bin/check-setup
+    purpose: self-heal remediable kit-version drift; auto-commit heals when tree is clean; surface irreducible items
+    on_nonzero_exit: halt_and_report
+    on_shell_unavailable: skip_and_record
+  - id: 7
+    action: execute
+    commands:
       - .law/bin/verify-adapters
       - .law/bin/validate-contracts
+      - .law/bin/check-coupling
       - .law/bin/check-counts
     on_nonzero_exit: halt_and_report
     on_shell_unavailable: skip_and_record
@@ -150,6 +160,7 @@ violations:
   - act_on_user_request_before_step_6
   - rely_on_prior_session_cold_read
   - skip_steps_1_through_3   # declared non-negotiable by CONSTITUTION.md line 32
+  - "check-setup reported heals — should I commit them?"
 
 anchors:
   constitution: "CONSTITUTION.md §0, §1, top comment block lines 3–33"
