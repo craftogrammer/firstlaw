@@ -46,10 +46,10 @@ On any conflict, the higher layer wins. An agent that notices a lower layer cont
 2. Read this file.
 3. Read `.law/contracts/project.contract.json`.
 4. Branch on `status`:
-   - `skeleton` or `bootstrapping` → read `.law/bootstrap/INIT.md` and execute.
-   - `active` → read whichever contracts/doctrine/charters are relevant to the current task; do not read everything.
-5. Check `.law/context/pending-questions.json`; read `.law/context/last-check.log` if it exists.
-6. Run `.law/bin/verify-adapters`, `.law/bin/validate-contracts`, and `.law/bin/check-counts`; halt on non-zero.
+   - `skeleton` or `bootstrapping` → read `.law/bootstrap/INIT.md` and execute it.
+   - `active` → read the contracts, doctrine, and charters relevant to the current task; do not read everything.
+5. Read `.law/context/pending-questions.json`; read `.law/context/last-check.log` if it exists.
+6. Run `.law/bin/verify-adapters`, `.law/bin/validate-contracts`, and `.law/bin/check-counts`; halt on any non-zero exit.
 
 ## What this kit does not own
 
