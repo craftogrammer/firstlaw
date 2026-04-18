@@ -21,13 +21,18 @@ Heals (auto, atomic commit per heal when tree is clean at start):
   - `CONSTITUTION.md` Amendment log row per contract heal (§9)
 
 Surfaces (no auto-heal):
-  - `KIT_VERSION` on disk differs from EXPECTED_KIT_VERSION bundled here
+  - `KIT_VERSION` on disk differs from what `expected_kit_version()` reads
+    from the root `KIT_VERSION` file (the single source of truth shipped by
+    install.sh; no hardcoded constant)
   - `project.contract.json#enforcement.coupled_paths` empty while a
     top-level `src/`, `lib/`, or `app/` exists
   - `pending-questions.json` entries with `blocking: true`
   - `current-system.json#contradiction_map` entries with `status` not
     `"resolved"` (brownfield: pass-with-warning when every unresolved
     entry carries a `related_plan` path that exists on disk)
+  - `*.md` files whose path does not match any `location_pattern` in
+    `doc-taxonomy.contract.json#layers[]` (classification requires agent
+    judgment, so surface-only; skips kit-managed skill/template paths)
 
 Exit codes:
   0 — clean, or cleanly healed (including dirty-tree heals left uncommitted)
@@ -39,6 +44,7 @@ Kit-author contract:
   CANONICAL_LAYERS in this file in the same commit. check-setup heals
   downstream projects on next cold-read.
 """
+import glob
 import json
 import os
 import shutil
@@ -47,8 +53,18 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-KIT_VERSION = "1.4"
-EXPECTED_KIT_VERSION = "1.3.0"
+
+def expected_kit_version() -> str:
+    """Single source of truth: the root KIT_VERSION file shipped by install.sh.
+
+    A function (not a constant) so future kit authors cannot drift the number
+    from the file contents; the file itself is authoritative every run.
+    """
+    kv = Path("KIT_VERSION")
+    if kv.exists():
+        return kv.read_text(encoding="utf-8").strip()
+    return "unknown"
+
 
 CANONICAL_LAYERS = {
     "skill": {
@@ -286,17 +302,77 @@ def plan_backed(entry: dict) -> bool:
     return isinstance(plan, str) and bool(plan.strip()) and Path(plan).exists()
 
 
+UNCLASSIFIED_HARD_SKIPS = (
+    ".law/skills/**/SKILL.md",
+    ".law/templates/**",
+    "node_modules/**",
+    ".git/**",
+)
+
+
+def _expand_patterns(patterns) -> set[str]:
+    """Expand glob patterns (including `**`) to a set of forward-slash
+    relative paths. Uses `glob.glob(recursive=True)` for `**` support.
+    """
+    matched: set[str] = set()
+    for pat in patterns:
+        if not isinstance(pat, str) or not pat:
+            continue
+        for hit in glob.glob(pat, recursive=True):
+            matched.add(hit.replace(os.sep, "/"))
+    return matched
+
+
+def _all_md_files() -> list[str]:
+    """All tracked-looking `*.md` paths (forward-slash, relative). Prunes
+    `node_modules/` and `.git/` at descent time — load-bearing for perf.
+    """
+    out: list[str] = []
+    for root, dirs, files in os.walk(".", topdown=True):
+        dirs[:] = [d for d in dirs if d not in ("node_modules", ".git")]
+        for f in files:
+            if f.endswith(".md"):
+                rel = os.path.join(root, f).replace(os.sep, "/")
+                if rel.startswith("./"):
+                    rel = rel[2:]
+                out.append(rel)
+    return out
+
+
+def unclassified_docs() -> list[str]:
+    """`*.md` paths matching no declared `location_pattern` and no hard-skip.
+    Returns [] when the contract is missing or malformed (fail-open matches
+    existing `project_mode()` pattern; validate-contracts surfaces schema issues).
+    """
+    if not CONTRACT_PATH.exists():
+        return []
+    try:
+        contract = load_json(CONTRACT_PATH)
+    except ValueError:
+        return []
+    patterns: list[str] = []
+    for layer in contract.get("layers", []):
+        if not isinstance(layer, dict):
+            continue
+        loc = layer.get("location_pattern", [])
+        if isinstance(loc, list):
+            patterns.extend(p for p in loc if isinstance(p, str))
+    allowed = _expand_patterns(patterns) | _expand_patterns(UNCLASSIFIED_HARD_SKIPS)
+    return sorted(p for p in _all_md_files() if p not in allowed)
+
+
 def surface_checks(
     surfaced: list[str], warnings: list[str], mode: str
 ) -> int:
     blockers = 0
 
+    expected = expected_kit_version()
     if KIT_VERSION_FILE.exists():
         on_disk = KIT_VERSION_FILE.read_text(encoding="utf-8").strip()
-        if on_disk != EXPECTED_KIT_VERSION:
+        if on_disk != expected:
             surfaced.append(
                 f"KIT_VERSION on disk is `{on_disk}`; script expects "
-                f"`{EXPECTED_KIT_VERSION}`. Run `install.sh --force` to re-fetch kit files."
+                f"`{expected}`. Run `install.sh --force` to re-fetch kit files."
             )
 
     if PROJECT_CONTRACT.exists():
@@ -364,6 +440,13 @@ def surface_checks(
                     surfaced.append(f"unresolved contradiction: `{cid}`.")
                     blockers += 1
 
+    for path in unclassified_docs():
+        surfaced.append(
+            f"unclassified doc: {path} — classify per doc-taxonomy "
+            f"or move to matching location_pattern."
+        )
+        blockers += 1
+
     return blockers
 
 
@@ -381,7 +464,7 @@ def print_report(
     dirty_note: str,
     bridge_populated: bool,
 ) -> None:
-    print(f"firstlaw check-setup v{KIT_VERSION}")
+    print(f"firstlaw check-setup v{expected_kit_version()}")
     if heals:
         print("heals:")
         for h in heals:
@@ -407,7 +490,7 @@ def write_last_check_log(
 ) -> None:
     LAST_CHECK.parent.mkdir(parents=True, exist_ok=True)
     lines = [
-        f"{now_iso()} firstlaw check-setup v{KIT_VERSION} "
+        f"{now_iso()} firstlaw check-setup v{expected_kit_version()} "
         f"healed={len(heals)} surfaced={len(surfaced)} blockers={blockers}"
     ]
     if heals:
@@ -486,7 +569,7 @@ def main() -> int:
     clean_disposition = ""
     if clean_run:
         clean_disposition = (
-            f"firstlaw check-setup v{KIT_VERSION} — clean (0 heals, "
+            f"firstlaw check-setup v{expected_kit_version()} — clean (0 heals, "
             f"0 surfaced). last-check.log updated."
         )
         print(clean_disposition)
