@@ -1,15 +1,21 @@
 #!/usr/bin/env sh
-# Sample pre-commit hook. Copy to .git/hooks/pre-commit and chmod +x, or
-# wire via `git config core.hooksPath .law/git-hooks` to make this dir the
-# active hook path.
+# firstlaw kit-managed pre-commit wiring. Invokes every enforcement
+# script shipped by the kit. Silent on pass; non-zero exit blocks the
+# commit. Bypass with --no-verify; agents must not bypass without
+# surfacing the reason to the user.
 #
-# Runs the kit integrity checks. Humans bypass with --no-verify; agents
-# bypass trivially too. Treat this as a human-facing safety net, not an
-# agent enforcement gate.
+# All scripts invoked via `python3 <script>` to sidestep Windows git
+# bash shebang quirks (Cygwin fork emulation fails on explicit `bash
+# <script>` invocation of Python files).
 
 set -e
 
-.law/bin/verify-adapters
-.law/bin/validate-contracts
-.law/bin/check-coupling
-.law/bin/check-counts
+python3 .law/bin/check-setup              # self-heal + surface irreducible
+python3 .law/bin/verify-adapters          # adapter BEGIN/END delimiter integrity
+python3 .law/bin/validate-contracts       # JSON Schema validation
+python3 .law/bin/check-coupling           # cross-domain import enforcement (v1.4)
+python3 .law/bin/check-amendment-coupling # source-change <-> contract-touch (v1.4 renamed)
+python3 .law/bin/check-counts             # current-system count reconciliation + amendment-log drift (v1.5)
+python3 .law/bin/check-truth-ownership    # write-site enforcement against write_patterns (v1.5)
+python3 .law/bin/check-anti-patterns      # anti-goal forbidden_patterns + enforcement.anti_patterns (v1.5)
+python3 .law/bin/check-skill-voice        # skill voice compliance (v1.5)
