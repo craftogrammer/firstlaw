@@ -106,6 +106,7 @@ The kit ships three small programs in `.law/bin/` that enforce properties of the
 - `verify-adapters` — adapter delimiter blocks stayed intact
 - `validate-contracts` — contracts validate against their schemas. Uses `check-jsonschema` or `ajv + ajv-formats` if globally installed; otherwise falls back to `npx ajv-cli` (zero pre-install on any Node machine; uses the `ajv-formats` plugin automatically for `date-time` support).
 - `check-coupling` — opt-in; source-path changes are accompanied by contract amendments
+- `check-counts` — declared counts in `current-system.json` match reality (open contradictions, blocking pending-questions)
 
 Compose them however you want. Example git pre-commit (copy `.law/git-hooks/pre-commit.sample` to `.git/hooks/pre-commit`):
 
@@ -115,6 +116,7 @@ set -e
 .law/bin/verify-adapters
 .law/bin/validate-contracts
 .law/bin/check-coupling
+.law/bin/check-counts
 ```
 
 Example GitHub Actions step (uses npx fallback, no pre-install needed):
@@ -125,6 +127,7 @@ Example GitHub Actions step (uses npx fallback, no pre-install needed):
     .law/bin/verify-adapters
     .law/bin/validate-contracts
     .law/bin/check-coupling
+    .law/bin/check-counts
 ```
 
 Project-specific enforcement (truth-owner writers, cross-domain imports, anti-patterns) lives in your `scripts/` directory. Starting points are in `.law/templates/`.

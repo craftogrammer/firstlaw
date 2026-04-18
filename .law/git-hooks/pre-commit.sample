@@ -12,3 +12,4 @@ set -e
 .law/bin/verify-adapters
 .law/bin/validate-contracts
 .law/bin/check-coupling
+.law/bin/check-counts

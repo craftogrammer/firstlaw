@@ -134,6 +134,7 @@ KIT_VERSION
 .law/bin/verify-adapters
 .law/bin/validate-contracts
 .law/bin/check-coupling
+.law/bin/check-counts
 .law/git-hooks/pre-commit.sample
 .law/templates/README.md
 .law/templates/check-truth-owners.example.mjs

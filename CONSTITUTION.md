@@ -12,7 +12,7 @@ If you are an agent reading this file for the first time in a session, execute t
    - `active` → read the contracts, doctrine, and charters relevant to the current task. Do not read everything.
 4. Read `.law/context/current-system.json` if present.
 5. Read `.law/context/pending-questions.json`. If `.law/context/last-check.log` exists, read it too.
-6. Run `.law/bin/verify-adapters` and `.law/bin/validate-contracts`. Non-zero exit from either = halt and report the failures to the user before acting on the task. If the shell is unavailable, skip and note it.
+6. Run `.law/bin/verify-adapters`, `.law/bin/validate-contracts`, and `.law/bin/check-counts`. Non-zero exit from any = halt and report the failures to the user before acting on the task. If the shell is unavailable, skip and note it.
 
 The turn ends only when one of these fires:
 
@@ -324,6 +324,7 @@ Firstlaw enforces properties of itself, not properties of your code. Be clear ab
 - `verify-adapters` — every adapter file listed in `project.contract.json#adapters.patched_files` still contains its `BEGIN/END .law/CONSTITUTION-FIRST` delimiter pair.
 - `validate-contracts` — every `.law/contracts/*.contract.json` validates against its declared `$schema`. Uses `check-jsonschema` if installed, otherwise `ajv + ajv-formats` if globally installed, otherwise falls back to `npx ajv-cli` with `ajv-formats` pulled in automatically. Fails closed only if none are available.
 - `check-coupling` — if a diff touches paths declared in `project.contract.json#enforcement.coupled_paths` without touching any file under `.law/contracts/`, flags the coupling violation. Opt-in; empty globs list = no-op.
+- `check-counts` — verifies declared counts in `.law/context/current-system.json` match reality: `summary.open_blockers_count` against blocking entries in pending-questions, prose `"N open contradictions"` against unresolved entries in `contradiction_map`.
 
 These are the parts of repo law whose enforcement does not depend on project semantics. The kit owns them end to end.
 
