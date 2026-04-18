@@ -141,11 +141,15 @@ KIT_VERSION
 .law/bin/check-amendment-coupling
 .law/bin/check-counts
 .law/bin/check-setup
+.law/bin/check-truth-ownership
+.law/bin/check-anti-patterns
+.law/bin/check-skill-voice
 .law/git-hooks/pre-commit.sample
 .law/templates/README.md
 .law/templates/check-truth-owners.example.mjs
 .law/templates/check-dep-direction.example.mjs
 .law/templates/check-anti-patterns.example.mjs
+.law/templates/skill-template.md
 .law/skills/halting-on-ambiguity/SKILL.md
 .law/skills/checking-truth-ownership-before-mutating/SKILL.md
 .law/skills/checking-dep-edges-before-importing/SKILL.md
@@ -153,10 +157,10 @@ KIT_VERSION
 .law/skills/resolving-layer-conflicts/SKILL.md
 .law/skills/grounding-with-dated-research/SKILL.md
 .law/skills/logging-amendments-atomically/SKILL.md
+.law/skills/maintaining-mechanical-enforcement/SKILL.md
 .law/skills/cold-reading-the-repo/SKILL.md
 .law/skills/running-brownfield-discovery/SKILL.md
 .law/skills/classifying-before-authoring/SKILL.md
-.law/skills/surfacing-forbidden-edges/SKILL.md
 .law/skills/authoring-project-skills/SKILL.md
 .law/skills/auditing-firstlaw-integrity/SKILL.md
 .law/skills/using-firstlaw/SKILL.md
@@ -203,12 +207,14 @@ Next step:
 
       follow CONSTITUTION.md
 
-  The agent runs the cold-read protocol, which self-heals any remediable
-  kit-version drift before acting on your request. v1.4 ships a real
-  cross-domain import checker (check-coupling) and treats brownfield
-  contradictions with matching open plans as pass-with-warning. Re-run
-  this installer with --force anytime to pull new kit features; the
-  next cold-read heals your project to match.
+  The agent runs the cold-read protocol, self-heals any remediable
+  kit-version drift, and enforces repo law. v1.5 adds parameterized
+  mechanical enforcement: check-truth-ownership, check-anti-patterns,
+  check-skill-voice. Populate pattern fields in your contracts
+  (truth-owners write_patterns, anti_goals forbidden_patterns,
+  enforcement anti_patterns) to activate them. Empty fields = no
+  mechanical enforcement — the judgment skills carry you until the
+  contracts catch up.
 
 Kit version: $(cat KIT_VERSION 2>/dev/null || echo '?')
 EOF
