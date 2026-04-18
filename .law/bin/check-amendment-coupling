@@ -1,0 +1,94 @@
+#!/bin/sh
+"exec" "python3" "$0" "$@"
+"""check-coupling — flag source-code changes lacking a matching contract amendment.
+
+Reads `.law/contracts/project.contract.json#enforcement.coupled_paths` (glob list,
+opt-in, default empty). Inspects `git diff --cached --name-only` (falls back to
+`git diff HEAD`). When a changed path matches a coupled glob and no file under
+`.law/contracts/` appears in the same diff, prints the hits and exits 1.
+
+`**` matches any subpath. `*` does not cross `/`. `?` matches a single character.
+Empty coupled_paths list (default) = no-op.
+"""
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+CONTRACT = Path(".law/contracts/project.contract.json")
+
+
+def glob_to_regex(pattern: str) -> re.Pattern:
+    i = 0
+    out = []
+    while i < len(pattern):
+        if pattern[i : i + 2] == "**":
+            out.append(".*")
+            i += 2
+        elif pattern[i] == "*":
+            out.append("[^/]*")
+            i += 1
+        elif pattern[i] == "?":
+            out.append("[^/]")
+            i += 1
+        else:
+            out.append(re.escape(pattern[i]))
+            i += 1
+    return re.compile("^" + "".join(out) + "$")
+
+
+def diff_paths() -> list[str]:
+    for cmd in (
+        ["git", "diff", "--cached", "--name-only"],
+        ["git", "diff", "--name-only", "HEAD"],
+    ):
+        try:
+            out = subprocess.check_output(cmd, text=True, stderr=subprocess.DEVNULL)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            continue
+        paths = [p for p in out.splitlines() if p]
+        if paths:
+            return paths
+    return []
+
+
+def main() -> int:
+    if not CONTRACT.exists():
+        return 0
+    try:
+        data = json.loads(CONTRACT.read_text())
+    except json.JSONDecodeError:
+        return 0
+    globs = data.get("enforcement", {}).get("coupled_paths", [])
+    if not globs:
+        return 0
+
+    changed = diff_paths()
+    if not changed:
+        return 0
+
+    if any(p.startswith(".law/contracts/") for p in changed):
+        return 0
+
+    patterns = [glob_to_regex(g) for g in globs]
+    hits = [p for p in changed if any(r.match(p) for r in patterns)]
+    if not hits:
+        return 0
+
+    print(
+        "check-coupling: source paths changed without a .law/contracts/* amendment:",
+        file=sys.stderr,
+    )
+    for p in hits:
+        print(f"  {p}", file=sys.stderr)
+    print(
+        "review CONSTITUTION.md section 9 (mutation rules); amend the relevant contract, "
+        "or bypass with `|| true` if intentional.",
+        file=sys.stderr,
+    )
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
