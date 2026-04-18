@@ -1,6 +1,6 @@
 ---
 name: using-firstlaw
-description: Use at session start in a repo with `CONSTITUTION.md` and `.law/`; before acting on law; when `CLAUDE.md`/`AGENTS.md`/`codex.md`/`.cursorrules` contradict `CONSTITUTION.md` or `.law/contracts/`; on "setup/check/audit/heal firstlaw" — routes to `auditing-firstlaw-integrity`.
+description: Use when a session starts in a repo with `CONSTITUTION.md` and `.law/`; before acting on law; when `CLAUDE.md`/`AGENTS.md`/`codex.md`/`.cursorrules` contradict `CONSTITUTION.md` or `.law/contracts/`; on "setup/check/audit/heal firstlaw" — routes to `auditing-firstlaw-integrity`.
 ---
 
 # Using Firstlaw

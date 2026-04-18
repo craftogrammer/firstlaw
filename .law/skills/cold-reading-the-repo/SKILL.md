@@ -1,6 +1,6 @@
 ---
 name: cold-reading-the-repo
-description: Use at the start of any session in a firstlaw-governed repo (root contains `CONSTITUTION.md`) — before answering the user's question, reading arbitrary files, planning, acting, or even clarifying. Fires on the first user message of a conversation. Fires again after any context reset or compaction. Symptoms that the skill was skipped: the agent opened a source file before running `.law/bin/` scripts; the agent asked "Want me to read `KIT_INDEX.md` next?"; the agent branched on `project.contract.json#status` without reading it; the agent answered a "simple" question without consulting `.law/context/pending-questions.json`. Also use when the user references kit-version drift, healing, setup, or when a session starts in a repo where `.law/bin/check-setup` has never been run.
+description: Use when any session starts in a firstlaw-governed repo (root contains `CONSTITUTION.md`) — before answering the user's question, reading arbitrary files, planning, acting, or even clarifying. Fires on the first user message of a conversation. Fires again after any context reset or compaction. Symptoms that the skill was skipped: the agent opened a source file before running `.law/bin/` scripts; the agent asked "Want me to read `KIT_INDEX.md` next?"; the agent branched on `project.contract.json#status` without reading it; the agent answered a "simple" question without consulting `.law/context/pending-questions.json`. Also use when the user references kit-version drift, healing, setup, or when a session starts in a repo where `.law/bin/check-setup` has never been run.
 ---
 
 # Cold Reading The Repo
@@ -54,10 +54,14 @@ The sequence, verbatim from `CONSTITUTION.md` §0-adjacent COLD-READ PROTOCOL:
 ## Agent must not
 
 - End the turn between steps 1 and 6 for any reason other than a defined blocker (blocking elicitation, quality-audit gate, 60-minute overrun, non-zero script exit).
-- Emit any summarize-and-ask variant. The protocol lists these as explicit violations:
-  - "I've read `CONSTITUTION.md`. Want me to read `KIT_INDEX.md` next?"
-  - "Status is `skeleton`. Should I open `INIT.md`?"
-  - "Here's what I found so far — should I proceed?"
+- Emit any summarize-and-ask variant. The protocol cites these verbatim as explicit violations (CONSTITUTION.md lines 26–28):
+
+  ```
+  "I've read CONSTITUTION.md. Want me to read KIT_INDEX.md next?"
+  "Status is skeleton. Should I open INIT.md?"
+  "Here's what I found so far — should I proceed?"
+  ```
+
   Delete the question. Continue reading.
 - Read "only what seems relevant" in place of step 1, step 2, or step 3. Steps 1–3 are declared non-negotiable by `CONSTITUTION.md` line 32.
 - Skip the `.law/bin/` scripts because they "probably pass". Non-zero exit is a halt condition the agent cannot predict.
@@ -80,9 +84,14 @@ The sequence, verbatim from `CONSTITUTION.md` §0-adjacent COLD-READ PROTOCOL:
 
 Halt and re-enter the sequence the instant any of these appear in the agent's own output or internal planning:
 
-- "I've read `CONSTITUTION.md`. Want me to read `KIT_INDEX.md` next?" — explicit violation per `CONSTITUTION.md` line 26.
-- "Status is `skeleton`. Should I open `INIT.md`?" — explicit violation per line 27.
-- "Here's what I found so far — should I proceed?" — explicit violation per line 28.
+- Any of the three verbatim violations cited by `CONSTITUTION.md` lines 26–28:
+
+  ```
+  "I've read CONSTITUTION.md. Want me to read KIT_INDEX.md next?"
+  "Status is skeleton. Should I open INIT.md?"
+  "Here's what I found so far — should I proceed?"
+  ```
+
 - "Let me just check one file first to answer the user's question" — acting before step 6.
 - "I'll run the scripts after I draft a response" — reversing the protocol order.
 - "The contracts look fine at a glance" — skipping validation.

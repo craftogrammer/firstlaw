@@ -42,7 +42,7 @@ Classify the cognitive moment (Layer A vs Layer B), research the current runtime
 - claim the skill is active in the current session without consulting `.law/contracts/agent-runtime.contract.json` for the runtime's load model
 - drop the reload line at end-of-session or soften it into a question
 - commit a skill that contradicts an existing charter, contract, or constitution article — amend the conflicting layer first per §9
-- use softening verbs (`should`, `try to`, `consider`, `prefer`, `usually`, `generally`, `might`) anywhere in the body
+- use any softening verb anywhere in the body — the forbidden set is enforced by `.law/bin/check-skill-voice`
 - author a new skill when the correct action is amending an existing skill's description to fire on the missed symptom
 - defer the pressure-test "until the next session" — an unvalidated skill silently rots
 - bypass `.law/bin/validate-contracts` or `.law/bin/verify-adapters` with `|| true`, `--no-verify`, or silent skip
@@ -69,7 +69,7 @@ Halt and re-check if any appear:
 - a `description` frontmatter with fewer than three concrete triggers, or triggers phrased as "when working on X"
 - a Layer B skill whose name contains `working-in`, `helper-for`, `utilities`, `guide`, `docs`, or the bare domain name
 - a body that asserts a rule without citing a constitution article or a contract path
-- any occurrence of `should`, `try to`, `consider`, `prefer`, `usually`, `generally`, `might` in the body
+- any occurrence of a softening verb in the body (run `.law/bin/check-skill-voice` to see the flagged set)
 - no `.law/context/research/authoring-project-skills-<YYYY-MM-DD>.json` envelope for the current author session
 - no pressure-test envelope pair (without-skill, with-skill) recorded under `.law/context/research/`
 - the commit message or session transcript omits the `Skill \`<name>\` committed ... Reload your agent runtime` line
