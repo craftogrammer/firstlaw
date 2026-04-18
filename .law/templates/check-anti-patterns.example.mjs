@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 // check-anti-patterns.example — simple project-wide gates.
 //
-// This is an EXAMPLE. Copy into your project (typically scripts/) and
-// tune the thresholds / patterns to match your doctrine. This starter
-// ships three cheap but real checks:
+// EXAMPLE. Copy into your project (typically scripts/) and tune the
+// thresholds / patterns to match your doctrine. This starter ships three
+// cheap but real checks:
 //
 //   1. File-size cap (default 300 lines) with an allowlist for files
-//      you haven't decomposed yet. Matches the pattern seen in mature
-//      codebases (ratcheting allowlist).
+//      you haven't decomposed yet. Matches the pattern mature codebases
+//      follow (ratcheting allowlist).
 //   2. Forbidden regex patterns (e.g. layered `??` fallback chains,
 //      `as any` type escapes) scoped by path prefix.
-//   3. Generic-folder names (shared/, common/, utils/, lib/) that lack
+//   3. Generic-folder names (shared/, common/, utils/, lib/) lacking
 //      a charter in .law/charters/.
 //
 // Run: node scripts/check-anti-patterns.mjs

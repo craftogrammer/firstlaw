@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # Sample pre-commit hook. Copy to .git/hooks/pre-commit and chmod +x, or
-# wire via `git config core.hooksPath .law/git-hooks` if you want this dir
-# to be the active hook path.
+# wire via `git config core.hooksPath .law/git-hooks` to make this dir the
+# active hook path.
 #
-# This runs the three kit integrity checks. Humans bypass with --no-verify;
-# agents bypass trivially too. Treat this as a human-facing safety net, not
-# an agent enforcement gate.
+# Runs the kit integrity checks. Humans bypass with --no-verify; agents
+# bypass trivially too. Treat this as a human-facing safety net, not an
+# agent enforcement gate.
 
 set -e
 

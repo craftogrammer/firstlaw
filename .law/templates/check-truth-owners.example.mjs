@@ -1,21 +1,20 @@
 #!/usr/bin/env node
 // check-truth-owners.example — project-specific writer enforcement.
 //
-// This is an EXAMPLE. Copy into your project (typically scripts/) and
-// adapt the `detectWriters` logic to your actual write paths (SQL, ORM,
-// key-value store, API handlers — whatever owns mutation in your stack).
+// EXAMPLE. Copy into your project (typically scripts/) and adapt the
+// `detectWriters` logic to your actual write paths (SQL, ORM, key-value
+// store, API handlers — whatever owns mutation in your stack).
 //
 // Default behaviour: for each truth in truth-owners.contract.json whose
-// storage looks like a SQL table, grep the working tree for INSERT/UPDATE/
-// DELETE statements touching that table. If any file outside the declared
-// `writer.module` writes the table, print the violation and exit 1.
+// storage resembles a SQL table, grep the working tree for INSERT/UPDATE/
+// DELETE statements touching that table. When any file outside the declared
+// `writer.module` writes the table, prints the violation and exits 1.
 //
-// Trade-offs this example makes:
+// Trade-offs this example accepts:
 //   - regex SQL detection; misses query builders / ORMs / dynamic SQL
 //   - no AST parse
-//   - assumes writer.module is a file path or a folder prefix
-// These are acceptable for a starter; swap in your real semantics when you
-// adopt this.
+//   - assumes writer.module names a file path or folder prefix
+// Acceptable for a starter; swap in your real semantics on adoption.
 //
 // Run: node scripts/check-truth-owners.mjs
 
