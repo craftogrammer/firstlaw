@@ -54,7 +54,12 @@
                 "required": ["goal", "reason"],
                 "properties": {
                   "goal": { "type": "string", "description": "The forbidden thing, stated plainly." },
-                  "reason": { "type": "string", "description": "Why this is forbidden — drift prevention, scope discipline, etc." }
+                  "reason": { "type": "string", "description": "Why this is forbidden — drift prevention, scope discipline, etc." },
+                  "forbidden_patterns": {
+                    "type": "array",
+                    "description": "Project-declared regexes flagging code violating this anti-goal. Consumed by .law/bin/check-anti-patterns. Empty = no mechanical enforcement, rely on refusing-anti-goal-creep skill.",
+                    "items": { "type": "string" }
+                  }
                 },
                 "additionalProperties": false
               }
@@ -130,9 +135,36 @@
       "properties": {
         "coupled_paths": {
           "type": "array",
-          "description": "Glob patterns. ** matches any subpath; * does not cross /; ? is a single character. If a diff touches any matching path without touching .law/contracts/*, check-coupling exits non-zero.",
-          "items": { "type": "string" },
-          "default": []
+          "description": "Glob paths where source changes require a matching .law/contracts/* amendment. Consumed by .law/bin/check-amendment-coupling (renamed in v1.4 from check-coupling). Empty = no-op. Drives amendment-coupling enforcement, NOT dependency-edge enforcement — the latter lives in dependency-rules.contract.json and is enforced by .law/bin/check-coupling.",
+          "items": { "type": "string" }
+        },
+        "anti_patterns": {
+          "type": "array",
+          "description": "Project-declared anti-pattern regexes (file-size, forbidden imports, generic folder names, etc.). Consumed by .law/bin/check-anti-patterns.",
+          "items": {
+            "type": "object",
+            "required": ["name", "pattern"],
+            "properties": {
+              "name": { "type": "string" },
+              "pattern": { "type": "string", "description": "Regex matched line-by-line against source files." },
+              "severity": {
+                "type": "string",
+                "enum": ["error", "warning"],
+                "default": "error"
+              },
+              "applies_to": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Glob paths to scope this pattern. Empty = all source files."
+              },
+              "allowlist": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Glob paths to skip. Takes precedence over applies_to."
+              },
+              "rationale": { "type": "string" }
+            }
+          }
         }
       }
     }
