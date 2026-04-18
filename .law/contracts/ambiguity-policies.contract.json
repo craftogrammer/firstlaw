@@ -57,6 +57,27 @@
       "action": "prefer-runtime-as-evidence",
       "action_detail": "Treat runtime as evidence. Update docs to match observed behavior OR fix runtime to match docs. Declare which; never leave the gap.",
       "record_in": ".law/context/current-system.json#contradiction_map"
+    },
+    {
+      "id": "design-fork",
+      "trigger": "Two plausible pre-implementation designs exist with no existing code, no declared owner in truth-owners.contract.json, and no clear winner from charter, contracts, or doctrine.",
+      "action": "halt-and-prototype-both",
+      "action_detail": "Build minimal spikes of each design (<= 50 lines each). Record both spikes in .law/context/current-system.json#judgment_log as inferred. Pick the surviving design based on spike evidence. Log the rejected spike with a superseded_by pointer to the winner. Until a spike resolves the fork, record the entry in contradiction_map with class: design-fork and status: open-noted.",
+      "record_in": ".law/context/current-system.json#contradiction_map"
+    },
+    {
+      "id": "multi-candidate-owner",
+      "trigger": "A truth has 3+ candidate writer modules, each with partial evidence. Distinct from unclear-ownership (no candidate identified); here, multiple candidates are real.",
+      "action": "record-candidates-and-escalate",
+      "action_detail": "List every candidate in contradiction_map[].evidence. Declare no owner in truth-owners.contract.json until escalation resolves the choice. Treat reads against the truth as unclear-ownership (blocked). Record the entry in contradiction_map with class: multi-candidate-owner and status: open, one evidence entry per candidate.",
+      "record_in": ".law/context/current-system.json#contradiction_map"
+    },
+    {
+      "id": "shadow-reader",
+      "trigger": "A module reads an owned truth (declared in truth-owners.contract.json) by bypassing the owner's abstraction layer (e.g., direct SQL on the owner's table, direct file read of the owner's config, direct cache access bypassing the owner's cache layer).",
+      "action": "halt-record-raise",
+      "action_detail": "Apply the shadow-writer discipline (doctrine section 5, multi-writer) to readers. Refuse to add new shadow-reader code. Record every existing shadow-reader in contradiction_map with class: shadow-reader and status: open or open-noted. Require a stabilization plan before any new dependency takes on the shadow-read path.",
+      "record_in": ".law/context/current-system.json#contradiction_map"
     }
   ],
   "agent_directives": {

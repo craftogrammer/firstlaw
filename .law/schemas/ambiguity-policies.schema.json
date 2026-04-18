@@ -61,7 +61,10 @@
               "merge-to-owner",
               "halt-and-escalate",
               "harden-or-remove",
-              "prefer-runtime-as-evidence"
+              "prefer-runtime-as-evidence",
+              "halt-and-prototype-both",
+              "record-candidates-and-escalate",
+              "halt-record-raise"
             ]
           },
           "action_detail": { "type": "string" },
