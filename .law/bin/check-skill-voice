@@ -1,0 +1,172 @@
+#!/bin/sh
+"exec" "python3" "$0" "$@"
+"""check-skill-voice — validate SKILL.md files against kit-owned voice rules.
+
+Walks `.law/skills/*/SKILL.md` and `.claude/skills/*/SKILL.md`, enforcing the
+v1.5 voice contract: YAML frontmatter shape, `name:` slug format, `description:`
+prefix, 1024-char frontmatter cap, softening-verb ban in author-voice prose,
+`§N` constitution citation presence, and the required section scaffold. Voice
+rules are kit-owned; a project SKILL.md cannot opt out.
+
+Exits 0 clean, 1 on any violation, 2 on internal error. One diagnostic line per
+violation: `<path>:<line>: <check> — <detail>`.
+"""
+import re
+import sys
+from pathlib import Path
+
+SKILL_ROOTS = [Path(".law/skills"), Path(".claude/skills")]
+
+FRONTMATTER_MAX = 1024
+NAME_RE = re.compile(r"^[a-z0-9-]+$")
+FM_NAME_RE = re.compile(r"^name:\s*(\S.*?)\s*$", re.MULTILINE)
+FM_DESC_RE = re.compile(r"^description:\s*(.+?)\s*$", re.MULTILINE)
+SECTION_CITATION_RE = re.compile(r"§\s*[0-9]")
+SOFT_VERB_RE = re.compile(r"\b(should|try to|consider|prefer|usually|generally|might)\b", re.IGNORECASE)
+FENCE_RE = re.compile(r"^`{3,}")
+VERBATIM_ROW_RE = re.compile(r'^\|\s*"[^"]*"\s*\|')
+
+REQUIRED_SECTIONS = (
+    "## Overview",
+    "## Rule",
+    "## Agent must",
+    "## Agent must not",
+    "## Machine-readable contract",
+)
+REQUIRED_SECTION_RES = tuple(
+    (s, re.compile(rf"^{re.escape(s)}\b", re.MULTILINE)) for s in REQUIRED_SECTIONS
+)
+
+
+def find_skill_files() -> list[Path]:
+    out: list[Path] = []
+    for root in SKILL_ROOTS:
+        if not root.is_dir():
+            continue
+        for child in sorted(root.iterdir()):
+            skill = child / "SKILL.md"
+            if skill.is_file():
+                out.append(skill)
+    return out
+
+
+def split_frontmatter(text: str) -> tuple[str | None, int, str, int]:
+    """Return (frontmatter_body, frontmatter_len, body_text, body_start_line).
+
+    frontmatter_body is the content between the opening and closing `---`
+    fences, without the fences themselves. Returns None when the file does
+    not open with `---` or lacks a closing `---`.
+    """
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return None, 0, text, 1
+    for idx in range(1, len(lines)):
+        if lines[idx].strip() == "---":
+            fm_body = "\n".join(lines[1:idx])
+            # Frontmatter length: the body between fences plus a trailing newline.
+            fm_len = len(fm_body) + (1 if fm_body else 0)
+            body = "\n".join(lines[idx + 1:])
+            return fm_body, fm_len, body, idx + 2
+    return None, 0, text, 1
+
+
+def check_file(path: Path) -> list[str]:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return [f"{path}: read-error — {exc}"]
+
+    viol: list[str] = []
+
+    fm_body, fm_len, body, body_start = split_frontmatter(text)
+
+    if fm_body is None:
+        viol.append(f"{path}:1: frontmatter-shape — missing opening/closing `---` fences")
+        return viol
+
+    if fm_len > FRONTMATTER_MAX:
+        viol.append(
+            f"{path}:1: frontmatter-length — {fm_len} chars exceeds {FRONTMATTER_MAX}"
+        )
+
+    name_match = FM_NAME_RE.search(fm_body)
+    if not name_match:
+        viol.append(f"{path}:1: frontmatter-name — missing `name:` field")
+    else:
+        name_val = name_match.group(1).strip().strip('"').strip("'")
+        if not NAME_RE.match(name_val):
+            viol.append(
+                f"{path}:1: frontmatter-name — `{name_val}` does not match ^[a-z0-9-]+$"
+            )
+
+    desc_match = FM_DESC_RE.search(fm_body)
+    if not desc_match:
+        viol.append(f"{path}:1: frontmatter-description — missing `description:` field")
+    else:
+        desc_val = desc_match.group(1).strip()
+        # Strip optional surrounding quotes.
+        if desc_val[:1] in ('"', "'") and desc_val[-1:] == desc_val[:1]:
+            desc_val = desc_val[1:-1]
+        if not desc_val.lower().lstrip().startswith("use when"):
+            preview = desc_val[:40].replace("\n", " ")
+            viol.append(
+                f"{path}:1: frontmatter-description — does not start with `Use when` (got `{preview}...`)"
+            )
+
+    if not SECTION_CITATION_RE.search(body):
+        viol.append(
+            f"{path}:{body_start}: constitution-citation — body contains no `§N` section citation"
+        )
+
+    for section, header_re in REQUIRED_SECTION_RES:
+        if not header_re.search(body):
+            viol.append(
+                f"{path}:{body_start}: required-section — missing `{section}` header"
+            )
+
+    in_fence = False
+    for offset, raw_line in enumerate(body.splitlines()):
+        lineno = body_start + offset
+        stripped = raw_line.strip()
+        if FENCE_RE.match(stripped):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if stripped.startswith(">"):
+            continue
+        if VERBATIM_ROW_RE.match(raw_line):
+            continue
+        m = SOFT_VERB_RE.search(raw_line)
+        if m:
+            viol.append(
+                f"{path}:{lineno}: softening-verb — `{m.group(0)}` in author-voice prose"
+            )
+
+    return viol
+
+
+def main() -> int:
+    try:
+        files = find_skill_files()
+    except OSError as exc:
+        print(f"check-skill-voice: cannot scan skills tree: {exc}", file=sys.stderr)
+        return 2
+
+    all_viol: list[str] = []
+    for f in files:
+        try:
+            all_viol.extend(check_file(f))
+        except Exception as exc:  # noqa: BLE001 — surface any internal error, stay non-zero
+            print(f"check-skill-voice: internal error on {f}: {exc}", file=sys.stderr)
+            return 2
+
+    if all_viol:
+        for v in all_viol:
+            print(v, file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
