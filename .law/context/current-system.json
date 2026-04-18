@@ -1,4 +1,5 @@
 {
+  "$schema": "../schemas/current-system.schema.json",
   "$comment": "Non-authoritative cache. Regenerate at the end of any session that changed runtime truth or any contract. Never a source of truth.",
   "schema_version": 1,
   "owner": "agent-regenerable",
