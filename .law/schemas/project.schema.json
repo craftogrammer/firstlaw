@@ -43,7 +43,24 @@
         "purpose_one_line": { "type": "string" },
         "primary_users": { "type": "array", "items": { "type": "string" } },
         "success_criteria": { "type": "array", "items": { "type": "string" } },
-        "anti_goals": { "type": "array", "items": { "type": "string" } }
+        "anti_goals": {
+          "type": "array",
+          "description": "Hard stops. Each item may be a bare string (legacy) or a {goal, reason} object (preferred).",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "object",
+                "required": ["goal", "reason"],
+                "properties": {
+                  "goal": { "type": "string", "description": "The forbidden thing, stated plainly." },
+                  "reason": { "type": "string", "description": "Why this is forbidden — drift prevention, scope discipline, etc." }
+                },
+                "additionalProperties": false
+              }
+            ]
+          }
+        }
       }
     },
     "mode": {
