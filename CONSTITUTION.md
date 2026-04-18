@@ -356,5 +356,6 @@ If your project has no code enforcing a contract, that contract remains prose un
 | Date | Amendment | Author |
 |---|---|---|
 | *(YYYY-MM-DD)* | Initial adoption. | *(n)* |
+| 2026-04-18 | Added `skill` layer to doc-taxonomy contract and schema. | Coordinator batch (elegant-discovering-gizmo) |
 
 > Record every subsequent amendment with a row here. An amendment without a row is unrecorded and, by Article 9, did not happen.

@@ -9,7 +9,7 @@
     "run_at": null,
     "kit_version": "1.0.0"
   },
-  "last_validated_at": null,
+  "last_validated_at": "2026-04-18T00:00:00Z",
   "status": "skeleton",
   "rules": {
     "every_doc_has_exactly_one_layer": true,
@@ -81,6 +81,14 @@
       "lifetime": "lives as long as the tool is used",
       "authority": "projection",
       "location_pattern": ["CLAUDE.md", "AGENTS.md", "codex.md", "GEMINI.md", ".cursorrules", ".cursor/rules/**", ".github/copilot-instructions.md", ".continuerc", ".aider.conf.yml", ".windsurfrules"]
+    },
+    {
+      "id": "skill",
+      "purpose": "Loadable capsule projecting constitution/contract law into a runtime-trigger + imperative-body form (YAML frontmatter with name + description, keyed to the cognitive moment that triggers it). Authored by agents via the authoring-project-skills skill; regenerable; subordinate to contracts. Never a source of truth — contracts and CONSTITUTION.md remain authoritative.",
+      "mutability": "regenerable",
+      "lifetime": "regenerate when source law (constitution/contracts) changes",
+      "authority": "projection",
+      "location_pattern": [".law/skills/**/SKILL.md"]
     },
     {
       "id": "code-comment",
