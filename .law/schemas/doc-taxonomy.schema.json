@@ -63,6 +63,7 @@
               "temporary-plan",
               "context-snapshot",
               "adapter",
+              "skill",
               "code-comment",
               "generated",
               "external-reference"
