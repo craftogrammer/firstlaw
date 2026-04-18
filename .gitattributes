@@ -1,9 +1,7 @@
-# Kit scripts and hooks must have LF endings regardless of checkout platform.
-# Agents pipe install.sh to `sh`; bin/ scripts are invoked directly by POSIX shells.
-# CRLF shebangs break everything.
-
-*.sh        text eol=lf
-*.mjs       text eol=lf
-.law/bin/*  text eol=lf
-.law/git-hooks/*  text eol=lf
-install.sh  text eol=lf
+* text=auto eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+.law/bin/* text eol=lf
+.law/git-hooks/* text eol=lf
