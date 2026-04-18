@@ -15,11 +15,11 @@
 
 ## 3. Researches
 
-Minimal. This subagent's job is empirical inventory of *this* repo, not pattern research. Research is permitted for:
+Minimal. This subagent performs empirical inventory of *this* repo, not pattern research. Research is permitted to:
 
-- Identifying common storage idioms in the detected stack (e.g. which file is typically the schema source of truth)
+- Identify common storage idioms in the detected stack (e.g. which file typically anchors the schema source of truth)
 
-Citations with retrieval dates required if web research is used.
+Citations with retrieval dates required when web research is used.
 
 ## 4. Elicits
 
@@ -29,9 +29,9 @@ In `greenfield` or `greenfield-from-empty` mode:
 
 In `brownfield` mode:
 
-- **Known multi-writer pain points** — places the user knows ownership is fragmented (non-blocking; pre-seeds contradiction_map)
+- **Known multi-writer pain points** — places the user knows ownership splits across writers (non-blocking; pre-seeds contradiction_map)
 
-Blocking questions arise only when a truth clearly exists but no plausible single owner can be inferred.
+Blocking questions arise only when a truth clearly exists but no plausible single owner emerges.
 
 ## 5. Produces
 
@@ -40,14 +40,14 @@ Patches:
 - `truth-owners.contract.json#truths` — each entry with `evidence_or_judgment` label
 - In brownfield: populate `.law/context/current-system.json#contradiction_map` with any multi-writer findings (entries with class `multiple-writers`)
 
-No code changes. Ownership violations discovered in the code are recorded as contradictions, not silently fixed.
+No code changes. Ownership violations discovered in the code record as contradictions; never silently fix them.
 
 ## 6. Envelope
 
 - `subagent_id`: `"ownership"`
 - `decisions[]`: ownership assignments with rationale
 - `evidence[]`: file paths (schema files, migrations, config readers), line references where applicable
-- `judgment[]`: any ownership assignment that is not directly observable, with confidence
+- `judgment[]`: any ownership assignment not directly observable, with confidence
 - `questions_for_orchestrator[]`: unresolved ownership gaps
 - `proposed_contract_patches[]`: patches to `truth-owners.contract.json`
 
@@ -61,13 +61,13 @@ Cap 2 calls. Advisor failures non-blocking.
 ## 8. DAG position
 
 - **Phase:** 2
-- **Depends on:** product (reads identity), architecture (depends-on edge is light; runs in parallel and orchestrator reconciles at merge)
+- **Depends on:** product (reads identity); architecture (light depends-on edge; runs in parallel and the orchestrator reconciles at merge)
 - **Runs in parallel with:** architecture, ambiguity
 
-> Note: architecture proposes domains; ownership assigns writers *within* those domains. In parallel execution both may propose, and the orchestrator reconciles if the architect's domains do not cover truths ownership discovered. If reconciliation requires a new domain, the orchestrator re-invokes architecture for a targeted amendment.
+> Note: architecture proposes domains; ownership assigns writers *within* those domains. Under parallel execution both may propose, and the orchestrator reconciles when the architect's domains do not cover truths ownership discovered. When reconciliation demands a new domain, the orchestrator re-invokes architecture for a targeted amendment.
 
 ## 9. Failure handling
 
-- Repo is empty (`greenfield-from-empty`) → produce an empty `truths[]` array; defer full ownership map to first feature work.
-- Storage layer undecided → elicit from user; if still undecided, record as `questions_for_orchestrator` with `blocking: false` and produce best-effort stub.
-- More than one plausible writer for a truth → record as contradiction in `current-system.json`, propose both as judgment entries, do not pick silently.
+- Repo is empty (`greenfield-from-empty`) → produce an empty `truths[]` array; defer the full ownership map to first feature work.
+- Storage layer undecided → elicit from the user; if still undecided, record as `questions_for_orchestrator` with `blocking: false` and produce a best-effort stub.
+- More than one plausible writer for a truth → record as contradiction in `current-system.json`, propose both as judgment entries, never pick silently.
