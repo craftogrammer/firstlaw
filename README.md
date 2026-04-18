@@ -2,18 +2,18 @@
 
 A template for installing **repo law** into a project.
 
-One `CONSTITUTION.md` at the root. A `.law/` directory for compiled law, doctrine, charters, subagent contracts, bootstrap protocol, and context snapshots. An agent reads the constitution cold and either runs the bootstrap protocol (if law is in skeleton state) or operates within the law (if filled).
+One `CONSTITUTION.md` at the root. A `.law/` directory holds compiled law, doctrine, charters, subagent contracts, bootstrap protocol, and context snapshots. The agent follows the constitution cold and either runs the bootstrap protocol (skeleton state) or operates within the law (filled state).
 
 ## Why
 
-Agents and humans drift. They invent certainty when the repo is unclear. They preserve bad compatibility because deleting feels unsafe. They patch locally instead of correcting ownership. They create parallel logic paths. They treat current code as intended architecture. They write long-lived decisions into throwaway plans.
+Agents and humans drift: they invent certainty when the repo is unclear, preserve bad compatibility because deleting feels unsafe, patch locally instead of correcting ownership, create parallel logic paths, treat current code as intended architecture, and write long-lived decisions into throwaway plans.
 
-This kit gives a project a stable, researched, machine-readable source of truth that survives those drifts. Bootstrap is grounded in live web research (not training-era patterns), real repo evidence, and user elicitation — not templates copy-pasted across projects.
+This kit gives a project a stable, researched, machine-readable source of truth that survives those drifts. Bootstrap draws on live web research (not training-era patterns), real repo evidence, and user elicitation — not templates copy-pasted across projects.
 
 ## What this is NOT
 
 - not a CLI, generator, or workflow runner
-- not a replacement for `CLAUDE.md`, `AGENTS.md`, `codex.md`, Cursor rules — those are adapters, non-authoritative, patched non-destructively
+- not a replacement for `CLAUDE.md`, `AGENTS.md`, `codex.md`, or Cursor rules — those are non-authoritative adapters, patched non-destructively
 - not a plugin or subagent framework
 - not a style guide, linter config, or CI pipeline
 - not a plan, sprint, or ticket manager — the kit recognizes plans as a document layer but does not own their format, location, or lifecycle
@@ -35,7 +35,7 @@ curl -fsSL https://raw.githubusercontent.com/craftogrammer/firstlaw/main/install
 Then open a new chat with any coding agent and say:
 
 ```
-read CONSTITUTION.md
+follow CONSTITUTION.md
 ```
 
 The agent detects skeleton state and runs `.law/bootstrap/INIT.md`.
@@ -77,13 +77,13 @@ Execution mode adapts to the environment:
 - **Advisor-only**: single executor consults an advisor capability at each subagent's checkpoints
 - **Degraded**: single agent runs phases sequentially with mandatory summary-to-envelope between phases
 
-30 minutes is an illustrative ceiling. The agent reports overrun and continues; it does not cut research to fit the clock.
+30 minutes is an illustrative ceiling. The agent reports overrun and continues; it must not cut research to fit the clock.
 
 ## Precedence
 
 1. `CONSTITUTION.md` — highest law
 2. `.law/contracts/*.contract.json` — compiled machine-readable law
-3. `.law/doctrine/*.md` and `.law/charters/*.md` — elaboration, may not contradict above
+3. `.law/doctrine/*.md` and `.law/charters/*.md` — elaboration, must not contradict above
 4. `.law/context/*` — non-authoritative snapshots and audit
 5. Tool-facing adapter files (`CLAUDE.md`, `AGENTS.md`, etc.) — non-authoritative projections, patched non-destructively
 
@@ -105,7 +105,7 @@ The kit ships three small programs in `.law/bin/` that enforce properties of the
 
 - `verify-adapters` — adapter delimiter blocks stayed intact
 - `validate-contracts` — contracts validate against their schemas. Uses `check-jsonschema` or `ajv + ajv-formats` if globally installed; otherwise falls back to `npx ajv-cli` (zero pre-install on any Node machine; uses the `ajv-formats` plugin automatically for `date-time` support).
-- `check-coupling` — opt-in; source-path changes are accompanied by contract amendments
+- `check-coupling` — opt-in; source-path changes must carry contract amendments
 - `check-counts` — declared counts in `current-system.json` match reality (open contradictions, blocking pending-questions)
 
 Compose them however you want. Example git pre-commit (copy `.law/git-hooks/pre-commit.sample` to `.git/hooks/pre-commit`):
@@ -134,7 +134,7 @@ Project-specific enforcement (truth-owner writers, cross-domain imports, anti-pa
 
 ## Versioning
 
-`KIT_VERSION` in the repo root tracks the installed kit version. Upgrades are manual: re-run `install.sh` with `--force` after backing up any kit-owned files that were edited (contracts are meant to be edited; doctrine and schemas should usually not be).
+`KIT_VERSION` in the repo root tracks the installed kit version. Upgrades are manual: re-run `install.sh` with `--force` after backing up any kit-owned files that were edited (contracts are meant to be edited; doctrine and schemas normally are not).
 
 ## Scope honesty
 
