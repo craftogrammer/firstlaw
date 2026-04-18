@@ -1,64 +1,95 @@
-#!/usr/bin/env sh
-# validate-contracts — validate every .law/contracts/*.contract.json against
-# its declared schema.
-#
-# Selects the first available validator:
-#   check-jsonschema   (pipx install check-jsonschema)
-#   ajv                (npm install -g ajv-cli)
-#
-# Fails closed when neither exists.
+#!/bin/sh
+"exec" "python3" "$0" "$@"
+"""validate-contracts — validate every .law/contracts/*.contract.json against its declared schema.
 
-set -eu
+Selects the first available validator:
+  check-jsonschema   (pipx install check-jsonschema)
+  ajv                (npm install -g ajv-cli ajv-formats)
+  npx ajv-cli        (zero pre-install; requires Node)
 
-SCHEMAS_DIR=".law/schemas"
-CONTRACTS_DIR=".law/contracts"
+Fails closed when none are available. Polyglot shebang: `bash`, direct
+exec, and `python3` invocations all route through python3.
+"""
 
-# Pick a validator in priority order:
-#   1. check-jsonschema       (pipx install check-jsonschema)
-#   2. ajv                    (npm install -g ajv-cli)
-#   3. npx ajv-cli            (zero pre-install; requires Node)
-if command -v check-jsonschema >/dev/null 2>&1; then
-  validator=check-jsonschema
-elif command -v ajv >/dev/null 2>&1; then
-  validator=ajv
-elif command -v npx >/dev/null 2>&1; then
-  validator=npx-ajv
-else
-  cat >&2 <<'EOF'
-validate-contracts: no JSON Schema validator available.
-install one:
-  pipx install check-jsonschema                        # Python path (simplest)
-  npm install -g ajv-cli ajv-formats                   # Node path (persistent; both packages required)
-  (or have `npx` on PATH — we'll invoke ajv-cli + ajv-formats transparently)
-EOF
-  exit 2
-fi
+import shutil
+import subprocess
+import sys
+from pathlib import Path
 
-fail=0
-for contract in "$CONTRACTS_DIR"/*.contract.json; do
-  [ -f "$contract" ] || continue
-  base=$(basename "$contract" .contract.json)
-  schema="$SCHEMAS_DIR/$base.schema.json"
-  if [ ! -f "$schema" ]; then
-    printf 'validate-contracts: no schema for %s (expected %s)\n' "$contract" "$schema" >&2
-    fail=1
-    continue
-  fi
-  case "$validator" in
-    check-jsonschema)
-      check-jsonschema --schemafile "$schema" "$contract" >&2 || fail=1
-      ;;
-    ajv)
-      # -c ajv-formats loads the formats plugin (date-time, uri, etc.).
-      # Requires `npm install -g ajv-formats` alongside ajv-cli.
-      ajv validate -s "$schema" -d "$contract" --spec=draft2020 -c ajv-formats >&2 || fail=1
-      ;;
-    npx-ajv)
-      # --package=... pulls both ajv-cli and ajv-formats into the npx cache.
-      npx --yes --package=ajv-cli --package=ajv-formats ajv validate \
-        -s "$schema" -d "$contract" --spec=draft2020 -c ajv-formats >&2 || fail=1
-      ;;
-  esac
-done
+SCHEMAS_DIR = Path(".law/schemas")
+CONTRACTS_DIR = Path(".law/contracts")
 
-exit $fail
+NO_VALIDATOR_MESSAGE = (
+    "validate-contracts: no JSON Schema validator available.\n"
+    "install one:\n"
+    "  pipx install check-jsonschema\n"
+    "  npm install -g ajv-cli ajv-formats\n"
+    "  (or have `npx` on PATH)\n"
+)
+
+
+def pick_validator():
+    if shutil.which("check-jsonschema"):
+        return "check-jsonschema"
+    if shutil.which("ajv"):
+        return "ajv"
+    if shutil.which("npx"):
+        return "npx-ajv"
+    return None
+
+
+def run(cmd):
+    """Run cmd with stdout redirected to stderr (matches the original shell `>&2`)."""
+    result = subprocess.run(cmd, check=False, stdout=sys.stderr.fileno())
+    return result.returncode == 0
+
+
+def validate(validator, schema, contract):
+    if validator == "check-jsonschema":
+        return run(["check-jsonschema", "--schemafile", str(schema), str(contract)])
+    if validator == "ajv":
+        return run([
+            "ajv", "validate",
+            "-s", str(schema),
+            "-d", str(contract),
+            "--spec=draft2020",
+            "-c", "ajv-formats",
+        ])
+    if validator == "npx-ajv":
+        return run([
+            "npx", "--yes",
+            "--package=ajv-cli",
+            "--package=ajv-formats",
+            "ajv", "validate",
+            "-s", str(schema),
+            "-d", str(contract),
+            "--spec=draft2020",
+            "-c", "ajv-formats",
+        ])
+    raise RuntimeError(f"unknown validator: {validator}")
+
+
+def main():
+    validator = pick_validator()
+    if validator is None:
+        sys.stderr.write(NO_VALIDATOR_MESSAGE)
+        return 2
+
+    fail = 0
+    for contract in sorted(CONTRACTS_DIR.glob("*.contract.json")):
+        base = contract.name[: -len(".contract.json")]
+        schema = SCHEMAS_DIR / f"{base}.schema.json"
+        if not schema.is_file():
+            sys.stderr.write(
+                f"validate-contracts: no schema for {contract} (expected {schema})\n"
+            )
+            fail = 1
+            continue
+        if not validate(validator, schema, contract):
+            fail = 1
+
+    return fail
+
+
+if __name__ == "__main__":
+    sys.exit(main())
