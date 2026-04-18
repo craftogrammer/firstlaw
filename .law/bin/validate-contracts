@@ -39,9 +39,21 @@ def pick_validator():
 
 
 def run(cmd):
-    """Run cmd with stdout redirected to stderr (matches the original shell `>&2`)."""
-    result = subprocess.run(cmd, check=False, stdout=sys.stderr.fileno())
-    return result.returncode == 0
+    """Run cmd with stdout redirected to stderr (matches the original shell `>&2`).
+
+    Returns True only when the validator exits 0 AND writes nothing to stderr.
+    Any captured stderr is re-emitted so the user sees WHY validation failed.
+    """
+    result = subprocess.run(
+        cmd,
+        check=False,
+        stdout=sys.stderr.fileno(),
+        stderr=subprocess.PIPE,
+    )
+    if result.stderr:
+        sys.stderr.buffer.write(result.stderr)
+        sys.stderr.flush()
+    return result.returncode == 0 and not result.stderr
 
 
 def validate(validator, schema, contract):
@@ -83,12 +95,12 @@ def main():
             sys.stderr.write(
                 f"validate-contracts: no schema for {contract} (expected {schema})\n"
             )
-            fail = 1
+            fail |= 1
             continue
         if not validate(validator, schema, contract):
-            fail = 1
+            fail |= 1
 
-    return fail
+    return 1 if fail else 0
 
 
 if __name__ == "__main__":
