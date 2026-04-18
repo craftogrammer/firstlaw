@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://firstlaw/schemas/current-system.schema.json",
+  "title": "Current system snapshot",
+  "description": "Non-authoritative cache that captures the current system's contradictions, judgments, and doc classifications. Pins the shape so agents stop reinventing contradiction_map and judgment_log entry formats per session.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "last_validated_at",
+    "summary",
+    "contradiction_map",
+    "judgment_log"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "last_validated_at": { "type": ["string", "null"], "format": "date-time" },
+    "summary": {
+      "type": "object",
+      "required": ["one_line", "open_blockers_count"],
+      "properties": {
+        "one_line": { "type": "string" },
+        "open_blockers_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "contradiction_map": {
+      "type": "array",
+      "description": "Known contradictions between runtime truth, contracts, and prose. Each entry is labeled, classified, and policy-tagged.",
+      "items": {
+        "type": "object",
+        "required": ["id", "class", "summary", "status"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^CM-[A-Z]+-[0-9]+$",
+            "description": "Stable identifier. Shape: CM-<DOMAIN>-<NN>, e.g. CM-OWN-01, CM-ARCH-03."
+          },
+          "class": {
+            "type": "string",
+            "description": "Contradiction class. Must match a class declared in ambiguity-policies.contract.json.",
+            "enum": [
+              "duplicate-logic",
+              "multi-source-config",
+              "multi-writer-truth",
+              "shadow-reader",
+              "unclear-ownership",
+              "design-fork",
+              "multi-candidate-owner",
+              "runtime-vs-docs",
+              "rule-softness"
+            ]
+          },
+          "summary": { "type": "string" },
+          "evidence": {
+            "type": "array",
+            "description": "Freeform evidence records (paths, line refs, quoted snippets) supporting the contradiction claim.",
+            "items": { "type": "object" }
+          },
+          "policy_applied": {
+            "type": "string",
+            "description": "References a policy id in ambiguity-policies.contract.json."
+          },
+          "resolution_action": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["open", "open-noted", "accepted-ratchet", "resolved"]
+          },
+          "related_plan": {
+            "type": "string",
+            "description": "Optional file path to an open stabilization plan. Consumed by check-setup for brownfield pass-with-warning."
+          },
+          "blocks_task": { "type": "boolean" }
+        }
+      }
+    },
+    "judgment_log": {
+      "type": "array",
+      "description": "Labeled judgments emitted by agents so later sessions can audit and supersede prior calls.",
+      "items": {
+        "type": "object",
+        "required": ["id", "claim", "rationale", "labeled_at"],
+        "properties": {
+          "id": { "type": "string" },
+          "claim": { "type": "string" },
+          "rationale": { "type": "string" },
+          "labeled_at": { "type": "string", "format": "date-time" },
+          "superseded_by": {
+            "type": "string",
+            "description": "Optional id of a later judgment that overrides this one."
+          }
+        }
+      }
+    },
+    "doc_classification": {
+      "type": "array",
+      "description": "Optional projection of repo docs onto the doc-taxonomy layers.",
+      "items": {
+        "type": "object",
+        "required": ["path", "layer"],
+        "properties": {
+          "path": { "type": "string" },
+          "layer": {
+            "type": "string",
+            "description": "References a layer id in doc-taxonomy.contract.json#layers[].id."
+          }
+        }
+      }
+    }
+  }
+}
