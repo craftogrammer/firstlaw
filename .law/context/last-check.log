@@ -1,0 +1,29 @@
+2026-04-18T20:38:27Z firstlaw check-setup v1.5.1 healed=0 surfaced=27 blockers=27
+surfaced:
+  - unclassified doc: .claude/skills/auditing-firstlaw-integrity/SKILL.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .claude/skills/authoring-project-skills/SKILL.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .claude/skills/checking-dep-edges-before-importing/SKILL.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .claude/skills/checking-truth-ownership-before-mutating/SKILL.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .claude/skills/classifying-before-authoring/SKILL.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .claude/skills/cold-reading-the-repo/SKILL.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .claude/skills/grounding-with-dated-research/SKILL.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .claude/skills/halting-on-ambiguity/SKILL.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .claude/skills/logging-amendments-atomically/SKILL.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .claude/skills/maintaining-mechanical-enforcement/SKILL.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .claude/skills/refusing-anti-goal-creep/SKILL.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .claude/skills/resolving-layer-conflicts/SKILL.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .claude/skills/running-brownfield-discovery/SKILL.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .claude/skills/using-firstlaw/SKILL.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .law/KIT_INDEX.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .law/adapters.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .law/bin/README.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .law/bootstrap/INIT.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .law/subagents/README.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .law/subagents/adapter.contract.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .law/subagents/ambiguity.contract.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .law/subagents/architecture.contract.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .law/subagents/doc-taxonomy.contract.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .law/subagents/ownership.contract.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .law/subagents/product.contract.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: .law/subagents/quality-audit.contract.md — classify per doc-taxonomy or move to matching location_pattern.
+  - unclassified doc: README.md — classify per doc-taxonomy or move to matching location_pattern.
