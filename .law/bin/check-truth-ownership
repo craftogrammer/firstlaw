@@ -1,0 +1,229 @@
+#!/bin/sh
+"exec" "python3" "$0" "$@"
+"""check-truth-ownership — enforce single-writer discipline per truth-owners.contract.json.
+
+Walk the working tree, match each truth's `write_patterns[]` against source
+files, and flag any match whose path does NOT fall under the truth owner's
+declared domain path(s) as a shadow-write violation.
+
+The kit ships no default patterns. Patterns live in
+`.law/contracts/truth-owners.contract.json#truths[].write_patterns[]`, each
+entry shaped `{language, pattern, description?}`:
+  - `language`: `"any"` matches every source extension; otherwise
+    matches files whose suffix is declared for that language
+    (`sql` -> `.sql`, `py` -> `.py`, `ts` -> `.ts`/`.tsx`, etc.).
+  - `pattern`: Python regex, applied per line.
+  - `description`: optional human label quoted in the violation line.
+
+Empty `write_patterns` across every truth = no-op exit 0. Missing contracts
+= no-op exit 0 (pre-bootstrap repos unaffected).
+
+Supported extensions: .ts, .tsx, .js, .jsx, .mjs, .py, .sql. Skipped roots:
+`.law/`, `node_modules/`, `.git/`, `__pycache__/`, `dist/`, `build/`.
+
+Silent on pass. Exit 1 on any violation, 2 on contract parse or regex
+compile error.
+"""
+import json
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(".")
+TRUTH_OWNERS = Path(".law/contracts/truth-owners.contract.json")
+DOMAIN_MAP = Path(".law/contracts/domain-map.contract.json")
+
+SOURCE_EXTS = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".py", ".sql"}
+SKIP_DIRS = {".law", "node_modules", ".git", "__pycache__", "dist", "build"}
+
+LANGUAGE_EXTS: dict[str, set[str]] = {
+    "any": set(SOURCE_EXTS),
+    "ts": {".ts", ".tsx"},
+    "tsx": {".tsx"},
+    "js": {".js", ".jsx", ".mjs"},
+    "jsx": {".jsx"},
+    "mjs": {".mjs"},
+    "py": {".py"},
+    "python": {".py"},
+    "sql": {".sql"},
+}
+
+
+def load_json(path: Path):
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def domain_paths(domain_map: dict) -> dict[str, list[Path]]:
+    """Map domain id -> [resolved root path, ...]. `path` may be str or list."""
+    out: dict[str, list[Path]] = {}
+    for d in domain_map.get("domains", []):
+        if not isinstance(d, dict):
+            continue
+        did = d.get("id")
+        raw = d.get("path")
+        if not isinstance(did, str) or not did or raw is None:
+            continue
+        paths = raw if isinstance(raw, list) else [raw]
+        resolved: list[Path] = []
+        for p in paths:
+            if not isinstance(p, str) or not p:
+                continue
+            resolved.append((ROOT / p).resolve())
+        if resolved:
+            out[did] = resolved
+    return out
+
+
+def path_under_owner(file_path: Path, owner_roots: list[Path]) -> bool:
+    try:
+        resolved = file_path.resolve()
+    except OSError:
+        return False
+    for root in owner_roots:
+        try:
+            resolved.relative_to(root)
+        except ValueError:
+            continue
+        return True
+    return False
+
+
+def walk_sources(root: Path):
+    for p in root.rglob("*"):
+        if not p.is_file() or p.suffix not in SOURCE_EXTS:
+            continue
+        if any(part in SKIP_DIRS for part in p.relative_to(root).parts):
+            continue
+        yield p
+
+
+def rel(p: Path) -> str:
+    try:
+        return str(p.relative_to(ROOT.resolve()))
+    except (ValueError, OSError):
+        try:
+            return str(p.relative_to(ROOT))
+        except ValueError:
+            return str(p)
+
+
+def collect_patterns(truth: dict) -> list[dict]:
+    raw = truth.get("write_patterns")
+    if not isinstance(raw, list):
+        return []
+    out: list[dict] = []
+    for entry in raw:
+        if isinstance(entry, dict) and isinstance(entry.get("pattern"), str):
+            out.append(entry)
+    return out
+
+
+def compile_pattern(entry: dict, truth_id: str, index: int) -> re.Pattern:
+    pat = entry["pattern"]
+    try:
+        return re.compile(pat)
+    except re.error as exc:
+        raise ValueError(
+            f"regex compile failed for truth `{truth_id}` pattern #{index}: {exc}"
+        )
+
+
+def exts_for_language(language: object) -> set[str] | None:
+    if not isinstance(language, str) or not language:
+        return set(SOURCE_EXTS)
+    key = language.lower()
+    return LANGUAGE_EXTS.get(key)
+
+
+def describe(entry: dict, index: int) -> str:
+    desc = entry.get("description")
+    if isinstance(desc, str) and desc.strip():
+        return desc.strip()
+    return f"pattern-{index}"
+
+
+def main() -> int:
+    if not TRUTH_OWNERS.exists() or not DOMAIN_MAP.exists():
+        return 0
+    try:
+        owners = load_json(TRUTH_OWNERS)
+        dmap = load_json(DOMAIN_MAP)
+    except (json.JSONDecodeError, OSError) as exc:
+        print(f"check-truth-ownership: cannot parse contract: {exc}", file=sys.stderr)
+        return 2
+
+    truths = owners.get("truths") if isinstance(owners, dict) else None
+    if not isinstance(truths, list) or not truths:
+        return 0
+
+    owner_roots = domain_paths(dmap if isinstance(dmap, dict) else {})
+
+    compiled: list[tuple[dict, str, list[Path], re.Pattern, set[str], str]] = []
+    try:
+        for truth in truths:
+            if not isinstance(truth, dict):
+                continue
+            tid = truth.get("id") or truth.get("subject") or "<no-id>"
+            owner = truth.get("owner")
+            if not isinstance(owner, str) or not owner:
+                continue
+            entries = collect_patterns(truth)
+            if not entries:
+                continue
+            roots = owner_roots.get(owner, [])
+            for i, entry in enumerate(entries):
+                exts = exts_for_language(entry.get("language"))
+                if exts is None:
+                    print(
+                        f"check-truth-ownership: unknown `language` for truth "
+                        f"`{tid}` pattern #{i}: {entry.get('language')!r}",
+                        file=sys.stderr,
+                    )
+                    return 2
+                regex = compile_pattern(entry, tid, i)
+                compiled.append((truth, tid, roots, regex, exts, describe(entry, i)))
+    except ValueError as exc:
+        print(f"check-truth-ownership: {exc}", file=sys.stderr)
+        return 2
+
+    if not compiled:
+        return 0
+
+    relevant_exts: set[str] = set()
+    for _, _, _, _, exts, _ in compiled:
+        relevant_exts |= exts
+
+    violations: list[str] = []
+    for src in walk_sources(ROOT):
+        ext = src.suffix
+        if ext not in relevant_exts:
+            continue
+        try:
+            text = src.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        lines = text.splitlines()
+        for truth, tid, roots, regex, exts, label in compiled:
+            if ext not in exts:
+                continue
+            under_owner = bool(roots) and path_under_owner(src, roots)
+            if under_owner:
+                continue
+            owner = truth.get("owner")
+            for lineno, line in enumerate(lines, start=1):
+                if not regex.search(line):
+                    continue
+                violations.append(
+                    f"`{rel(src)}`:{lineno} writes `{tid}` "
+                    f"(owned by `{owner}`) — pattern: {label}"
+                )
+
+    if violations:
+        for v in violations:
+            print(v, file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
