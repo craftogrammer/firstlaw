@@ -48,7 +48,7 @@ Behavior:
 
   To reset contracts to skeleton, delete them manually and re-run install.
 
-After install, open a new chat with any agent and say: "read CONSTITUTION.md"
+After install, open a new chat with any agent and say: "follow CONSTITUTION.md"
 EOF
       exit 0
       ;;
@@ -181,10 +181,10 @@ Install complete.
 Next step:
   Open a new chat with any coding agent (Claude, Codex, Cursor, etc.) and say:
 
-      read CONSTITUTION.md
+      follow CONSTITUTION.md
 
-  The agent will detect that contracts are in skeleton state and run the
-  bootstrap protocol at .law/bootstrap/INIT.md.
+  The agent detects skeleton-state contracts and runs the bootstrap
+  protocol at .law/bootstrap/INIT.md.
 
 Kit version: $(cat KIT_VERSION 2>/dev/null || echo '?')
 EOF
