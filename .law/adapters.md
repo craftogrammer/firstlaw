@@ -15,7 +15,7 @@ The kit does not ship a hardcoded list of adapter files. The `adapter` subagent 
 - **Content heuristics** — first-person instructional voice addressed to an assistant/agent, rules lists, tool names, explicit system-prompt framing.
 - **Live web research** — which tools currently use which filenames, retrieved with dates.
 
-Single-signal matches are surfaced to the user for confirmation. Multi-signal matches are proposed for patching, also with user confirmation before any write.
+The subagent surfaces single-signal matches to the user for confirmation. It proposes multi-signal matches for patching, also requiring user confirmation before any write.
 
 ## Non-destructive patching (hard rule)
 
@@ -29,15 +29,15 @@ The kit never overwrites user-owned adapter content. Patching rules:
    <!-- END .law/CONSTITUTION-FIRST -->
    ```
 
-2. **Update in place.** If the delimited block exists, the subagent updates content *inside* the delimiters only. Content before `BEGIN` and after `END` is preserved byte-for-byte.
+2. **Update in place.** If the delimited block exists, the subagent updates content *inside* the delimiters only. It preserves content before `BEGIN` and after `END` byte-for-byte.
 
-3. **Prepend on absence.** If the block does not exist, the subagent prepends it. One exception: if the file has a YAML frontmatter (`---\n...\n---`) at the top, the block goes immediately *after* the frontmatter, never before.
+3. **Prepend on absence.** If the block does not exist, the subagent prepends it. One exception: if the file has a YAML frontmatter (`---\n...\n---`) at the top, the subagent places the block immediately *after* the frontmatter, never before.
 
 4. **Halt on conflict.** If the existing content declares identity, domains, ownership, or dependency rules that contradict the contracts, the subagent does **not** patch. It halts on that file and surfaces the conflict for human resolution.
 
 5. **Ask on ambiguity.** If the merge target is unclear — for example, the file has an existing block with a different delimiter, or the frontmatter shape is non-standard — the subagent halts on that file and asks.
 
-6. **Record every patch.** Each successful patch is recorded in `project.contract.json#adapters.patched_files[]` with `path`, `patched_at`, and `discovery_method`. This is the audit trail.
+6. **Record every patch.** The subagent records each successful patch in `project.contract.json#adapters.patched_files[]` with `path`, `patched_at`, and `discovery_method`. This is the audit trail.
 
 ## What adapters may contain
 
@@ -85,8 +85,8 @@ On any conflict between an adapter and repo law:
 ## Maintenance
 
 - When contracts change, the orchestrator re-runs the `adapter` subagent to refresh the block contents (not the user-owned content).
-- Adapters that no longer serve a living tool can be archived or deleted by the user. The kit does not auto-remove adapter files.
-- No auto-generation of adapters the user hasn't already adopted.
+- The user may archive or delete adapters that no longer serve a living tool. The kit must not auto-remove adapter files.
+- The kit must not auto-generate adapters the user has not already adopted.
 
 ## Discovery log
 
