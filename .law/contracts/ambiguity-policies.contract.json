@@ -2,7 +2,7 @@
   "$schema": "../schemas/ambiguity-policies.schema.json",
   "schema_version": 1,
   "owner": "ambiguity",
-  "purpose": "Declares what an agent or human must do when a specific class of ambiguity is observed. Ambiguity is never resolved by taste.",
+  "purpose": "Declares what an agent or human must do on observing a specific class of ambiguity. Taste never resolves ambiguity.",
   "authoritative": true,
   "generated_from": {
     "subagent": "ambiguity",

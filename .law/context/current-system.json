@@ -1,5 +1,5 @@
 {
-  "$comment": "Non-authoritative cache. Regenerable at the end of any session that changed runtime truth or any contract. Never treated as source of truth.",
+  "$comment": "Non-authoritative cache. Regenerate at the end of any session that changed runtime truth or any contract. Never a source of truth.",
   "schema_version": 1,
   "owner": "agent-regenerable",
   "purpose": "Fast re-grounding snapshot. Lets a new session orient without re-reading the whole repo.",
