@@ -104,6 +104,7 @@ fetch_once() {
 KIT_FILES="
 CONSTITUTION.md
 KIT_VERSION
+.gitattributes
 .law/KIT_INDEX.md
 .law/adapters.md
 .law/bootstrap/INIT.md
@@ -124,6 +125,9 @@ KIT_VERSION
 .law/schemas/doc-taxonomy.schema.json
 .law/schemas/quality-audit.schema.json
 .law/schemas/subagent-envelope.schema.json
+.law/schemas/current-system.schema.json
+.law/schemas/agent-runtime.schema.json
+.law/contracts/agent-runtime.contract.json
 .law/doctrine/product.md
 .law/doctrine/architecture.md
 .law/doctrine/agent-behavior.md
@@ -134,6 +138,7 @@ KIT_VERSION
 .law/bin/verify-adapters
 .law/bin/validate-contracts
 .law/bin/check-coupling
+.law/bin/check-amendment-coupling
 .law/bin/check-counts
 .law/bin/check-setup
 .law/git-hooks/pre-commit.sample
@@ -199,9 +204,11 @@ Next step:
       follow CONSTITUTION.md
 
   The agent runs the cold-read protocol, which self-heals any remediable
-  kit-version drift before acting on your request. Re-run this installer
-  with --force anytime to pull new kit features; the next cold-read
-  heals your project to match.
+  kit-version drift before acting on your request. v1.4 ships a real
+  cross-domain import checker (check-coupling) and treats brownfield
+  contradictions with matching open plans as pass-with-warning. Re-run
+  this installer with --force anytime to pull new kit features; the
+  next cold-read heals your project to match.
 
 Kit version: $(cat KIT_VERSION 2>/dev/null || echo '?')
 EOF

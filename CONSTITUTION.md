@@ -42,9 +42,9 @@ This document tops the project's truth hierarchy. Everything else — code, cont
 
 - **Project name:** *(see `.law/contracts/project.contract.json#identity.name`)*
 - **Mode:** *(see `.law/contracts/project.contract.json#mode`)* — one of `greenfield`, `greenfield-from-empty`, `brownfield`
-- **Constitution version:** 2
+- **Constitution version:** 3
 - **Kit version:** *(see `KIT_VERSION` at repo root)*
-- **Last amended:** 2026-04-18
+- **Last amended:** 2026-04-19
 - **Amendment authority:** *(a named human or role in the project)*
 
 An **amendment** is any change to this file or to any contract under `.law/contracts/`. Commit amendments together with the change that motivated them, and log them at the bottom of this file.
@@ -267,6 +267,7 @@ Plans exist in this repo as a recognized document layer, but the kit does not ow
 | New doc layer or changed layer rules | `doc-taxonomy.contract.json` |
 | New dependency quality finding or acknowledgement | `quality-audit.contract.json` |
 | Any change to identity, mode, pointers, stack, or anti-goals | `project.contract.json` and this file |
+| Changed runtime-specific load model or discovery path | `agent-runtime.contract.json` (with retrieval date) |
 
 Every contract stamps `last_validated_at` on touch and updates `generated_from.run_at` when a subagent re-derives it.
 
@@ -327,7 +328,8 @@ Firstlaw enforces properties of itself, not properties of your code. Keep the di
 - `check-setup` — self-heals remediable kit-version drift on cold-read (stale contract layers, missing skill bridge, unwired pre-commit hook, absent `last-check.log`). Idempotent. Auto-commits heals when the working tree is clean; otherwise prints review instructions and skips commit. Surfaces irreducible blockers. Runs first in the cold-read script sequence.
 - `verify-adapters` — every adapter file listed in `project.contract.json#adapters.patched_files` still contains its `BEGIN/END .law/CONSTITUTION-FIRST` delimiter pair.
 - `validate-contracts` — every `.law/contracts/*.contract.json` validates against its declared `$schema`. Uses `check-jsonschema` if installed, otherwise `ajv + ajv-formats` if globally installed, otherwise falls back to `npx ajv-cli` with `ajv-formats` pulled in automatically. Fails closed only if none are available.
-- `check-coupling` — if a diff touches paths declared in `project.contract.json#enforcement.coupled_paths` without touching any file under `.law/contracts/`, flags the coupling violation. Opt-in; empty globs list = no-op.
+- `check-coupling` — walks source-tree imports across domains declared in `domain-map.contract.json`; fails any edge not in `dependency-rules.contract.json#allowed` (default deny). Starter languages: TypeScript, JavaScript, Python. Adapts per project.
+- `check-amendment-coupling` — flags source-tree changes lacking a matching `.law/contracts/*` amendment when `project.contract.json#enforcement.coupled_paths` is populated. Opt-in; empty globs list = no-op.
 - `check-counts` — verifies declared counts in `.law/context/current-system.json` match reality: `summary.open_blockers_count` against blocking entries in pending-questions, prose `"N open contradictions"` against unresolved entries in `contradiction_map`.
 
 These parts of repo law do not depend on project semantics for enforcement. The kit owns them end to end.
@@ -362,5 +364,6 @@ If your project has no code enforcing a contract, that contract remains prose un
 | *(YYYY-MM-DD)* | Initial adoption. | *(n)* |
 | 2026-04-18 | Added `skill` layer to doc-taxonomy contract and schema. | Coordinator batch (elegant-discovering-gizmo) |
 | 2026-04-18 | Added `.law/bin/check-setup` self-heal on cold-read; bumped cold-read protocol to run it first (new step 6), moved kit-integrity checks to step 7; bumped Constitution version to 2. | firstlaw v1.3 |
+| 2026-04-19 | v1.4: real cross-domain import checker; old coupling script renamed to `check-amendment-coupling`; brownfield self-heal pass-with-warning for plan-backed contradictions; `validate-contracts` Windows Cygwin fix via Python polyglot; new contracts `agent-runtime.contract.json` + schema; new schema `current-system.schema.json`; ambiguity-policies +3 (design-fork, multi-candidate-owner, shadow-reader); dep-edge skill +5 rationalizations; authoring-project-skills refresh; `.gitattributes` shipped; check-setup output attribution + disposition + reload hint; INIT §5.1 degraded/headless mode; Constitution version bumped to 3. | firstlaw v1.4 |
 
 > Record every subsequent amendment with a row here. An amendment without a row is unrecorded and, by Article 9, did not happen.
