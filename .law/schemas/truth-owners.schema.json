@@ -58,7 +58,27 @@
           "readers_allowed": { "type": "array", "items": { "type": "string" } },
           "validation_authority": { "type": ["string", "null"] },
           "status": { "type": "string", "enum": ["proposed", "active", "deprecated"] },
-          "evidence_or_judgment": { "type": "string", "enum": ["evidence", "judgment"] }
+          "evidence_or_judgment": { "type": "string", "enum": ["evidence", "judgment"] },
+          "write_patterns": {
+            "type": "array",
+            "description": "Project-declared regexes matching write-site syntax in this codebase's stack. Consumed by .law/bin/check-truth-ownership. Empty or absent = no mechanical enforcement for this truth.",
+            "items": {
+              "type": "object",
+              "required": ["language", "pattern"],
+              "properties": {
+                "language": {
+                  "type": "string",
+                  "enum": ["sql", "ts", "js", "py", "rust", "go", "java", "any"],
+                  "description": "Source-file language filter. 'any' = match all source files."
+                },
+                "pattern": {
+                  "type": "string",
+                  "description": "Regex matching a write-site line in this language."
+                },
+                "description": { "type": "string" }
+              }
+            }
+          }
         }
       }
     },
