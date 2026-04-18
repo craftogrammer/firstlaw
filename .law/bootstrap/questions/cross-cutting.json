@@ -11,7 +11,7 @@
       "options": ["greenfield", "greenfield-from-empty", "brownfield"],
       "blocking": true,
       "asked_by_phase": 0,
-      "notes": "Presented with the signals the agent observed. User can override if detection is wrong."
+      "notes": "Presented with the signals the agent observed. User may override when detection is wrong."
     },
     {
       "id": "project-name",
@@ -27,7 +27,7 @@
       "answer_shape": "free_text",
       "blocking": true,
       "asked_by_phase": 1,
-      "notes": "Hard requirement. Generic statements are rejected; agent pushes back for specificity."
+      "notes": "Hard requirement. Agent rejects generic statements and pushes back for specificity."
     },
     {
       "id": "primary-users",
@@ -35,7 +35,7 @@
       "answer_shape": "free_text",
       "blocking": true,
       "asked_by_phase": 1,
-      "notes": "Agent probes vague answers. Primary users cannot be 'everyone'."
+      "notes": "Agent probes vague answers. Primary users must not be 'everyone'."
     },
     {
       "id": "success-criteria",
@@ -43,7 +43,7 @@
       "answer_shape": "free_text",
       "blocking": true,
       "asked_by_phase": 1,
-      "notes": "Must be observable. Feelings or intentions do not count."
+      "notes": "Outcomes must be observable. Feelings or intentions do not count."
     },
     {
       "id": "anti-goals",
@@ -51,7 +51,7 @@
       "answer_shape": "free_text",
       "blocking": true,
       "asked_by_phase": 1,
-      "notes": "Agent probes for reasons. An anti-goal without a reason is a preference; it must become a commitment to enter the contract."
+      "notes": "Agent probes for reasons. An anti-goal without a reason remains a preference; it must become a commitment to enter the contract."
     },
     {
       "id": "stack-build-test-lint",
@@ -59,16 +59,16 @@
       "answer_shape": "free_text",
       "blocking": false,
       "asked_by_phase": 1,
-      "notes": "Non-blocking. If not provided, contract keeps nulls; post-bootstrap maintenance can fill later."
+      "notes": "Non-blocking. When not provided, contract keeps nulls; post-bootstrap maintenance may fill later."
     },
     {
       "id": "default-ambiguity-action",
-      "intent": "When no ambiguity policy matches, should the agent halt and escalate, or proceed with labeled judgment?",
+      "intent": "When no ambiguity policy matches, must the agent halt and escalate, or proceed with labeled judgment?",
       "answer_shape": "single_select",
       "options": ["halt_and_escalate", "proceed_with_judgment"],
       "blocking": false,
       "asked_by_phase": 2,
-      "notes": "Default is halt_and_escalate. Overriding to proceed_with_judgment is recorded explicitly."
+      "notes": "Default is halt_and_escalate. Any override to proceed_with_judgment records explicitly."
     },
     {
       "id": "adapter-patch-confirmation",
@@ -77,7 +77,7 @@
       "options": [],
       "blocking": true,
       "asked_by_phase": 3,
-      "notes": "Options are populated at runtime by the adapter subagent from its heuristic scan. User can approve all, approve some, or defer with 'none'."
+      "notes": "The adapter subagent populates options at runtime from its heuristic scan. User may approve all, approve some, or defer with 'none'."
     }
   ]
 }
