@@ -24,7 +24,7 @@ Retrieval dates required for any web-sourced claim.
 
 ## 4. Elicits
 
-- **Existing doc intent** — for any doc found whose layer is unclear, ask the user which layer applies (blocking if the doc is substantive; non-blocking if trivial)
+- **Existing doc intent** — for any doc whose layer remains unclear, ask the user which layer applies (blocking when the doc is substantive; non-blocking when trivial)
 - **Custom layers** — whether the project needs any layers beyond the standard set (non-blocking; rare)
 
 ## 5. Produces
@@ -32,15 +32,15 @@ Retrieval dates required for any web-sourced claim.
 Patches:
 
 - `doc-taxonomy.contract.json#layers` — extend `location_pattern` globs for the detected stack
-- `doc-taxonomy.contract.json#layers` — add custom layers if user confirmed
-- **Classification manifest** — for each existing doc found, a classification entry; stored in `.law/context/current-system.json#doc_classification`
-- For docs whose current location contradicts their intended layer's `location_pattern`, propose relocations in `questions_for_orchestrator` (never moved silently)
+- `doc-taxonomy.contract.json#layers` — add custom layers on user confirmation
+- **Classification manifest** — for each existing doc, one classification entry; stored in `.law/context/current-system.json#doc_classification`
+- For docs whose current location contradicts their intended layer's `location_pattern`, propose relocations in `questions_for_orchestrator` (never move silently)
 
 ## 6. Envelope
 
 - `subagent_id`: `"doc-taxonomy"`
 - `decisions[]`: classifications made, layer additions
-- `evidence[]`: file paths of classified docs, excerpts where classification was content-based
+- `evidence[]`: file paths of classified docs, excerpts where classification draws from content
 - `judgment[]`: any classification not directly observable from the doc's location or header
 - `questions_for_orchestrator[]`: unclear classifications and proposed relocations
 - `proposed_contract_patches[]`: patches to `doc-taxonomy.contract.json` and `current-system.json`
@@ -48,7 +48,7 @@ Patches:
 ## 7. Advisor checkpoints
 
 - **Checkpoint A — before committing classifications**: consult advisor on any doc with ambiguous layer.
-- **Checkpoint B — before finalizing envelope**: validate no doc is left unclassified.
+- **Checkpoint B — before finalizing envelope**: validate no doc remains unclassified.
 
 Cap 2 calls. Advisor failures non-blocking.
 
@@ -61,5 +61,5 @@ Cap 2 calls. Advisor failures non-blocking.
 ## 9. Failure handling
 
 - Doc too long to read in full → read head, tail, and section headers; classify with confidence and mark as judgment.
-- User unavailable on a blocking classification → write to `pending-questions.json` with `blocking: true`; orchestrator surfaces at the end of bootstrap.
-- Doc appears to belong to multiple layers → record as ambiguity finding (it likely is one), propose split or relocation, do not silently pick.
+- User unavailable on a blocking classification → write to `pending-questions.json` with `blocking: true`; the orchestrator surfaces it at the end of bootstrap.
+- Doc appears to belong to multiple layers → record as ambiguity finding (it likely is one), propose split or relocation, never pick silently.
