@@ -140,6 +140,19 @@ KIT_VERSION
 .law/templates/check-truth-owners.example.mjs
 .law/templates/check-dep-direction.example.mjs
 .law/templates/check-anti-patterns.example.mjs
+.law/skills/halting-on-ambiguity/SKILL.md
+.law/skills/checking-truth-ownership-before-mutating/SKILL.md
+.law/skills/checking-dep-edges-before-importing/SKILL.md
+.law/skills/refusing-anti-goal-creep/SKILL.md
+.law/skills/resolving-layer-conflicts/SKILL.md
+.law/skills/grounding-with-dated-research/SKILL.md
+.law/skills/logging-amendments-atomically/SKILL.md
+.law/skills/cold-reading-the-repo/SKILL.md
+.law/skills/running-brownfield-discovery/SKILL.md
+.law/skills/classifying-before-authoring/SKILL.md
+.law/skills/surfacing-forbidden-edges/SKILL.md
+.law/skills/authoring-project-skills/SKILL.md
+.law/skills/using-firstlaw/SKILL.md
 "
 
 TEMPLATE_FILES="
