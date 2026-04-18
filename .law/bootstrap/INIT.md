@@ -5,23 +5,23 @@
 
 ## Purpose
 
-Produce filled, research-grounded contracts for this project. Target ceiling: 30 minutes. The ceiling is illustrative — the agent reports overrun and continues; it does not cut research to fit the clock. Correctness beats budget.
+Produce filled, research-grounded contracts for this project. Target ceiling: 30 minutes. The ceiling is illustrative — the agent reports overrun and continues; it must not cut research to fit the clock. Correctness beats budget.
 
 ---
 
 ## 0. Preconditions
 
 - The kit is installed: `CONSTITUTION.md` at repo root, `.law/` populated from the kit distribution.
-- The agent has read `CONSTITUTION.md` and `.law/KIT_INDEX.md`.
-- The agent has ability to: read files, run shell commands, perform live web research, and (if the environment supports it) spawn subagents and/or invoke an advisor capability.
+- The agent has followed `CONSTITUTION.md` and `.law/KIT_INDEX.md`.
+- The agent must be able to: read files, run shell commands, perform live web research, and (if the environment supports it) spawn subagents and/or invoke an advisor capability.
 
-Empty repos are valid. There is no scaffold precondition that halts bootstrap.
+Empty repos are valid. No scaffold precondition halts bootstrap.
 
 ---
 
 ## 0.1 Autonomy rule
 
-This protocol runs as a single continuous sequence from mode detection through merge-and-commit. The agent does not end its turn between phases, between subagents, between file reads, or between any internal transition. It runs until one of the defined turn-end conditions fires.
+This protocol runs as a single continuous sequence from mode detection through merge-and-commit. The agent must not end its turn between phases, between subagents, between file reads, or between any internal transition. It runs until one of the defined turn-end conditions fires.
 
 **Turn-end conditions (exhaustive):**
 
@@ -40,13 +40,13 @@ No other turn boundaries are legal.
 - "Here's a summary of what the subagents produced — should I merge the envelopes?"
 - Any request for approval to transition between phases, subagents, or steps defined in this protocol.
 
-If the agent finds itself about to write one of those, it deletes the question and continues executing.
+The agent must delete any such question and continue executing.
 
 **Allowed announcements (not turn boundaries):**
 
 The agent emits one-line status messages as it works: mode detected, execution mode chosen, phase starting, phase complete, subagent started, subagent returned envelope, merge complete, bootstrap complete. These are progress indicators inside a single turn, not questions.
 
-**Advisor checkpoints (§4) are agent-to-advisor, not agent-to-user.** They do not end the agent's turn.
+**Advisor checkpoints (§4) are agent-to-advisor, not agent-to-user.** They must not end the agent's turn.
 
 ---
 
@@ -103,7 +103,7 @@ Integration:
    orchestrator merges envelopes → commits contract patches
 ```
 
-Each subagent reads its contract at `.law/subagents/<id>.contract.md`, constructs its own prompt, and returns one envelope matching `.law/schemas/subagent-envelope.schema.json`.
+Each subagent follows its contract at `.law/subagents/<id>.contract.md`, constructs its own prompt, and returns one envelope matching `.law/schemas/subagent-envelope.schema.json`.
 
 Subagents discover additional project-added subagent contracts in `.law/subagents/*.contract.md` and include them in the DAG at the position they declare.
 
@@ -116,18 +116,18 @@ If advisor capability is available, every subagent observes two checkpoints from
 - **Checkpoint A**: before committing primary recommendation — advisor reviews draft decisions/patches.
 - **Checkpoint B**: before finalizing envelope — advisor validates evidence/judgment labeling.
 
-Cap per subagent: 2–3 calls (subagent's contract specifies). Rate limit or unavailability is non-blocking — subagent proceeds and records `advisor_calls_used` + failure notes in envelope.
+Cap per subagent: 2–3 calls (subagent's contract specifies). Rate limit or unavailability is non-blocking — subagent proceeds and records `advisor_calls_used` plus failure notes in envelope.
 
 ---
 
 ## 5. Elicitation policy
 
-Subagents ask questions via interactive elicitation. Every question is marked `blocking` or non-blocking.
+Subagents ask questions via interactive elicitation. Every question declares `blocking` or non-blocking.
 
 - **Blocking**: halt until answered. Identity anti-goals in `greenfield-from-empty` mode are the canonical blockers.
-- **Non-blocking**: if the user is unavailable, subagent accumulates the question in `.law/context/pending-questions.json` and proceeds with a labeled judgment entry.
+- **Non-blocking**: when the user is unavailable, the subagent appends the question to `.law/context/pending-questions.json` and proceeds with a labeled judgment entry.
 
-Cross-cutting questions (identity + mode) live in `.law/bootstrap/questions/cross-cutting.json`. Subagent-specific questions are owned by each subagent — no central library for them.
+Cross-cutting questions (identity + mode) live in `.law/bootstrap/questions/cross-cutting.json`. Each subagent owns its own questions — no central library for them.
 
 ---
 
@@ -139,7 +139,7 @@ Every subagent deposits its research log at:
 .law/context/research/<subagent-id>-<YYYY-MM-DD>.json
 ```
 
-The log contains: all queries run, all URLs fetched, retrieval timestamps, raw excerpts. The orchestrator does **not** read research logs. It reads only envelopes. Logs are for later human or agent audit.
+The log contains: all queries run, all URLs fetched, retrieval timestamps, raw excerpts. The orchestrator must **not** read research logs. It reads only envelopes. Logs serve later human or agent audit.
 
 ---
 
@@ -148,12 +148,12 @@ The log contains: all queries run, all URLs fetched, retrieval timestamps, raw e
 Orchestrator receives envelopes. For each envelope:
 
 1. Apply `proposed_contract_patches[]` in order.
-2. If two envelopes touch the same field, reconcile:
+2. When two envelopes touch the same field, reconcile:
    - Prefer evidence over judgment.
-   - If both are evidence and differ, halt, surface in `pending-questions.json`.
-   - If advisor capability is available, orchestrator may consult advisor on the reconciliation.
+   - When both are evidence and differ, halt and surface in `pending-questions.json`.
+   - When advisor capability is available, orchestrator may consult advisor on the reconciliation.
 3. Append all `judgment[]` entries to `.law/context/current-system.json#judgment_log`.
-4. Append all `questions_for_orchestrator[]` to `.law/context/pending-questions.json` or (for blocking) halt and surface.
+4. Append all `questions_for_orchestrator[]` to `.law/context/pending-questions.json`, or (for blocking) halt and surface.
 
 When all phases complete and no blocking questions remain, flip `project.contract.json#status` to `active`. Stamp `last_validated_at` on every contract.
 
@@ -161,13 +161,13 @@ When all phases complete and no blocking questions remain, flip `project.contrac
 
 ## 8. Quality-audit acknowledgement gate (advisory)
 
-If `quality-audit.contract.json#findings` contains any `critical` severity entries:
+When `quality-audit.contract.json#findings` contains any `critical` severity entries:
 
 - Present them to the user with evidence (URLs + retrieval dates).
-- Request acknowledgement. Acknowledgement is recording-only; no action required.
+- Request acknowledgement. Acknowledgement records only; no action required.
 - On acknowledgement, stamp `acknowledged`, `acknowledged_at`, `acknowledged_by`.
 
-**Bootstrap completes regardless of acknowledgement state.** Quality audit is advisory; it never blocks adoption.
+**Bootstrap completes regardless of acknowledgement state.** Quality audit is advisory; it must not block adoption.
 
 ---
 
@@ -192,12 +192,12 @@ The agent reports completion with a one-paragraph summary and the path to `.law/
 
 Target ceiling: 30 minutes wall-clock.
 
-- If the agent projects to exceed 30 minutes, it emits a one-line notice with an ETA and continues.
-- The agent does not cut research to fit the budget. Research freshness is a hard rule; the budget is a soft target.
-- If wall-clock exceeds 60 minutes, the agent pauses and asks the user whether to continue, slim scope, or checkpoint for later resumption.
+- When the agent projects to exceed 30 minutes, it emits a one-line notice with an ETA and continues.
+- The agent must not cut research to fit the budget. Research freshness is a hard rule; the budget is a soft target.
+- When wall-clock exceeds 60 minutes, the agent pauses and asks the user whether to continue, slim scope, or checkpoint for later resumption.
 
 ---
 
 ## 11. Resume semantics
 
-If bootstrap was interrupted: read `project.contract.json#status`, `.law/context/pending-questions.json`, and each contract's `generated_from` fields. Resume from the last incomplete phase. Do not re-run completed subagents unless their inputs changed.
+When bootstrap was interrupted: consult `project.contract.json#status`, `.law/context/pending-questions.json`, and each contract's `generated_from` fields. Resume from the last incomplete phase. Do not re-run completed subagents unless their inputs changed.
