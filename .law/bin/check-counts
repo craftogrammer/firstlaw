@@ -3,8 +3,11 @@
 """check-counts — confirm declared counts in current-system.json match reality.
 
 Catches drift between the prose/structured counts in
-`.law/context/current-system.json` and the actual list lengths they describe.
-Two classes of check:
+`.law/context/current-system.json` and the actual list lengths they describe,
+and — per Article 9 (Mutation rules) — confirms every contract edit is
+co-located with an amendment-log row in CONSTITUTION.md.
+
+Three classes of check:
 
 1. Structured count fields: when `summary.open_blockers_count` is declared,
    confirm it matches the count of `blocking: true` entries in
@@ -14,69 +17,245 @@ Two classes of check:
    `<N> open contradictions`, confirm it matches the count of entries in
    `contradiction_map` whose `status` is not `"resolved"`.
 
-Exits 0 on pass, non-zero on any mismatch. Silent on pass.
+3. Amendment-log reconciliation: count commits since a reference point that
+   touched `.law/contracts/*.contract.json` and compare to amendment-log
+   rows added since that reference. Per §9 atomicity, one atomic change is
+   one row — multi-contract commits count as one edit.
+
+Exits 0 on pass, 1 on drift, 2 on internal error. Silent on pass.
 Graceful no-op when files or fields are absent.
 """
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 SYS = Path(".law/context/current-system.json")
 PENDING = Path(".law/context/pending-questions.json")
+CONSTITUTION = Path("CONSTITUTION.md")
+CONTRACTS_PATHSPEC = ".law/contracts/*.contract.json"
+KIT_VERSION_RE = re.compile(r"\bfirstlaw\s+v\d+(?:\.\d+){1,2}\b", re.IGNORECASE)
+
+
+def _git(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["git", *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def _parse_amendment_log(text: str) -> list[str]:
+    """Return content lines of the Amendment log table (excluding header/separator)."""
+    m = re.search(r"(?m)^##\s+Amendment log\s*$", text)
+    if not m:
+        return []
+    rest = text[m.end():]
+    rows: list[str] = []
+    for line in rest.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(">"):
+            # Blockquote after table marks end of table region.
+            break
+        if stripped.startswith("##"):
+            break
+        if not stripped.startswith("|"):
+            continue
+        # Count pipe separators: a three-column row has exactly 4 pipes
+        # (leading, between cols, between cols, trailing).
+        if stripped.count("|") != 4:
+            continue
+        # Skip header and separator rows.
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if len(cells) != 3:
+            continue
+        if cells[0].lower() == "date" and cells[1].lower() == "amendment":
+            continue
+        if all(re.fullmatch(r":?-+:?", c) for c in cells):
+            continue
+        rows.append(stripped)
+    return rows
+
+
+def _find_row_commit(row_line: str) -> str | None:
+    """Return the commit hash that introduced the given amendment-log row."""
+    # Use a short distinguishing substring from the row for `git log -S`.
+    # Prefer the middle cell (the amendment text) as the needle.
+    cells = [c.strip() for c in row_line.strip("|").split("|")]
+    needle = cells[1] if len(cells) >= 2 and cells[1] else row_line
+    # Truncate to keep -S well-formed; `git log -S` does literal substring.
+    needle = needle[:80]
+    if not needle:
+        return None
+    res = _git(
+        "log", "--reverse", "--format=%H",
+        "-S", needle, "--", str(CONSTITUTION),
+    )
+    if res.returncode != 0:
+        return None
+    hashes = [h for h in res.stdout.split() if h]
+    return hashes[0] if hashes else None
+
+
+def _first_commit() -> str | None:
+    res = _git("rev-list", "--max-parents=0", "HEAD")
+    if res.returncode != 0:
+        return None
+    hashes = [h for h in res.stdout.split() if h]
+    return hashes[0] if hashes else None
+
+
+def _head_minus_50() -> str | None:
+    res = _git("rev-parse", "HEAD~50")
+    if res.returncode != 0:
+        return None
+    h = res.stdout.strip()
+    return h or None
+
+
+def _determine_reference(rows: list[str]) -> tuple[str | None, str | None, int | None]:
+    """Return (ref_commit, description, ref_row_index). ref_commit is None on failure."""
+    for idx in range(len(rows) - 1, -1, -1):
+        m = KIT_VERSION_RE.search(rows[idx])
+        if not m:
+            continue
+        commit = _find_row_commit(rows[idx])
+        if commit:
+            return commit, f"{m.group(0)} (commit {commit[:8]})", idx
+        break  # Only try the most recent KIT_VERSION row.
+    # Fallback: HEAD~50 or first commit, whichever is later.
+    h50 = _head_minus_50()
+    if h50:
+        return h50, "HEAD~50", None
+    first = _first_commit()
+    if first:
+        return first, "repo root", None
+    return None, None, None
+
+
+def _contract_edit_commits(ref: str) -> int | None:
+    """Count commits in ref..HEAD that touched any .law/contracts/*.contract.json."""
+    res = _git(
+        "log", f"{ref}..HEAD", "--name-only", "--pretty=format:%H",
+        "--", CONTRACTS_PATHSPEC,
+    )
+    if res.returncode != 0:
+        return None
+    # Each commit block: hash line, then filenames, then blank. We only need hashes.
+    count = 0
+    for line in res.stdout.splitlines():
+        line = line.strip()
+        if re.fullmatch(r"[0-9a-f]{7,40}", line):
+            count += 1
+    return count
+
+
+def _reconcile_amendment_log() -> int:
+    """Return 0 on pass/skip, 1 on drift."""
+    if not CONSTITUTION.exists():
+        return 0
+    # Need a git repo with at least one commit.
+    if _git("rev-parse", "--git-dir").returncode != 0:
+        return 0
+    if _git("rev-parse", "HEAD").returncode != 0:
+        return 0
+
+    try:
+        text = CONSTITUTION.read_text(encoding="utf-8")
+    except OSError:
+        return 0
+    rows = _parse_amendment_log(text)
+
+    ref_commit, ref_desc, ref_row_idx = _determine_reference(rows)
+    if ref_commit is None:
+        print(
+            "check-counts: could not determine amendment-log reference point; "
+            "skipping reconciliation",
+            file=sys.stderr,
+        )
+        return 0
+
+    edits = _contract_edit_commits(ref_commit)
+    if edits is None:
+        print(
+            "check-counts: could not enumerate contract-edit commits; "
+            "skipping reconciliation",
+            file=sys.stderr,
+        )
+        return 0
+
+    rows_since = len(rows) if ref_row_idx is None else max(0, len(rows) - 1 - ref_row_idx)
+
+    if edits > rows_since:
+        print(
+            f"check-counts: {edits} commits touched .law/contracts/* since "
+            f"{ref_desc} but only {rows_since} amendment-log rows added",
+            file=sys.stderr,
+        )
+        return 1
+    return 0
 
 
 def main() -> int:
-    if not SYS.exists():
-        return 0
-    try:
-        data = json.loads(SYS.read_text())
-    except json.JSONDecodeError:
-        return 0  # validate-contracts handles JSON syntax
-
     failed = 0
-    summary = data.get("summary", {})
 
-    # Check 1: open_blockers_count vs pending-questions
-    declared_blockers = summary.get("open_blockers_count")
-    if declared_blockers is not None and PENDING.exists():
+    if SYS.exists():
         try:
-            pending = json.loads(PENDING.read_text())
+            data = json.loads(SYS.read_text())
         except json.JSONDecodeError:
-            pending = None
-        if pending is not None:
-            entries = pending.get("questions", pending) if isinstance(pending, dict) else pending
-            if isinstance(entries, list):
-                actual = sum(1 for q in entries if isinstance(q, dict) and q.get("blocking") is True)
-                if actual != declared_blockers:
-                    print(
-                        f"check-counts: summary.open_blockers_count={declared_blockers} "
-                        f"but pending-questions.json has {actual} blocking entries",
-                        file=sys.stderr,
-                    )
-                    failed += 1
+            data = None  # validate-contracts handles JSON syntax
+        if data is not None:
+            summary = data.get("summary", {})
 
-    # Check 2: prose "N open contradictions" vs contradiction_map
-    contradictions = data.get("contradiction_map", [])
-    if isinstance(contradictions, list):
-        actual_open = sum(
-            1 for c in contradictions
-            if isinstance(c, dict) and c.get("status") != "resolved"
-        )
-        one_line = summary.get("one_line", "")
-        m = re.search(r"(\d+)\s+open\s+contradictions?", one_line, re.IGNORECASE)
-        if m:
-            declared = int(m.group(1))
-            if declared != actual_open:
-                print(
-                    f"check-counts: summary.one_line says '{declared} open contradictions' "
-                    f"but contradiction_map has {actual_open} unresolved entries",
-                    file=sys.stderr,
+            # Check 1: open_blockers_count vs pending-questions
+            declared_blockers = summary.get("open_blockers_count")
+            if declared_blockers is not None and PENDING.exists():
+                try:
+                    pending = json.loads(PENDING.read_text())
+                except json.JSONDecodeError:
+                    pending = None
+                if pending is not None:
+                    entries = pending.get("questions", pending) if isinstance(pending, dict) else pending
+                    if isinstance(entries, list):
+                        actual = sum(1 for q in entries if isinstance(q, dict) and q.get("blocking") is True)
+                        if actual != declared_blockers:
+                            print(
+                                f"check-counts: summary.open_blockers_count={declared_blockers} "
+                                f"but pending-questions.json has {actual} blocking entries",
+                                file=sys.stderr,
+                            )
+                            failed += 1
+
+            # Check 2: prose "N open contradictions" vs contradiction_map
+            contradictions = data.get("contradiction_map", [])
+            if isinstance(contradictions, list):
+                actual_open = sum(
+                    1 for c in contradictions
+                    if isinstance(c, dict) and c.get("status") != "resolved"
                 )
-                failed += 1
+                one_line = summary.get("one_line", "")
+                m = re.search(r"(\d+)\s+open\s+contradictions?", one_line, re.IGNORECASE)
+                if m:
+                    declared = int(m.group(1))
+                    if declared != actual_open:
+                        print(
+                            f"check-counts: summary.one_line says '{declared} open contradictions' "
+                            f"but contradiction_map has {actual_open} unresolved entries",
+                            file=sys.stderr,
+                        )
+                        failed += 1
+
+    # Check 3: amendment-log reconciliation (§9 atomicity)
+    failed += _reconcile_amendment_log()
 
     return 1 if failed else 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except Exception as e:  # noqa: BLE001
+        print(f"check-counts: internal error: {e}", file=sys.stderr)
+        sys.exit(2)
