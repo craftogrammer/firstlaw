@@ -12,20 +12,22 @@ Execute the sequence below as a single continuous action. Do not end your turn b
    - `active` → consult the contracts, doctrine, and charters relevant to the current task. Do not read everything.
 4. Consult `.law/context/current-system.json` if present.
 5. Consult `.law/context/pending-questions.json`. If `.law/context/last-check.log` exists, consult it too.
-6. Run `.law/bin/verify-adapters`, `.law/bin/validate-contracts`, and `.law/bin/check-counts`. Non-zero exit from any = halt and report the failures to the user before acting on the task. If the shell is unavailable, skip and note it.
+6. Run `.law/bin/check-setup`. It self-heals remediable kit-version drift (stale contract layers, missing skill bridge, unwired pre-commit hook, absent `last-check.log`) and commits each heal with a matching row in the Amendment log at the bottom of this file. Irreducible surfaces (empty `coupled_paths` with source code present, blocking pending questions, unresolved contradictions, `KIT_VERSION` drift) halt the cold-read and report them. Non-zero exit = halt.
+7. Run `.law/bin/verify-adapters`, `.law/bin/validate-contracts`, `.law/bin/check-coupling`, and `.law/bin/check-counts`. Non-zero exit from any = halt and report the failures to the user before acting on the task. If the shell is unavailable, skip and note it.
 
 The turn ends only when one of these fires:
 
-- All six steps complete in operate mode, and the agent is ready to act on the user's original request.
+- All seven steps complete in operate mode, and the agent is ready to act on the user's original request.
 - A blocking elicitation question defined by the bootstrap protocol is reached (identity, anti-goals, mode confirmation, or an irresolvable discovery gap).
 - The quality-audit acknowledgement gate or the 60-minute overrun checkpoint fires (defined in `.law/bootstrap/INIT.md`).
-- A kit integrity script in step 6 returned non-zero.
+- One of the kit integrity scripts in step 6 or step 7 returned non-zero.
 
 The following are **violations**, not legitimate turn boundaries:
 
 - "I've read CONSTITUTION.md. Want me to read `KIT_INDEX.md` next?"
 - "Status is skeleton. Should I open `INIT.md`?"
 - "Here's what I found so far — should I proceed?"
+- "check-setup reported 2 heals, want me to commit them?" — the script already committed them when the tree was clean, or printed review instructions when dirty. Asking the question means you did not read its output.
 
 Catch the impulse, delete the question, continue reading.
 
@@ -40,9 +42,9 @@ This document tops the project's truth hierarchy. Everything else — code, cont
 
 - **Project name:** *(see `.law/contracts/project.contract.json#identity.name`)*
 - **Mode:** *(see `.law/contracts/project.contract.json#mode`)* — one of `greenfield`, `greenfield-from-empty`, `brownfield`
-- **Constitution version:** 1
+- **Constitution version:** 2
 - **Kit version:** *(see `KIT_VERSION` at repo root)*
-- **Last amended:** *(date the most recent Amendment log entry below)*
+- **Last amended:** 2026-04-18
 - **Amendment authority:** *(a named human or role in the project)*
 
 An **amendment** is any change to this file or to any contract under `.law/contracts/`. Commit amendments together with the change that motivated them, and log them at the bottom of this file.
@@ -304,6 +306,7 @@ Agents (and tired humans) fail in specific, repeated ways. This constitution exp
 - A duplicated truth owner discovered mid-task blocks the task.
 - A stale doctrine entry discovered mid-task gets amended or gets marked stale with a dated note.
 - A misclassified document discovered mid-task gets reclassified and moved per `doc-taxonomy.contract.json`.
+- Kit-version drift discovered at cold-read auto-heals via `.law/bin/check-setup`. Drift the script cannot heal (ambiguity, missing user decisions, empty `enforcement.coupled_paths` with source code present) blocks the session.
 
 **Agent must** surface violations loudly. Block, escalate, record.
 
@@ -319,8 +322,9 @@ Quality-audit findings (in `.law/contracts/quality-audit.contract.json`) are **a
 
 Firstlaw enforces properties of itself, not properties of your code. Keep the distinction explicit — conflating them invites silent drift.
 
-**Kit-enforced.** Three small programs in `.law/bin/`, composed however you want (git hooks, CI, shell pipelines, test runner, Makefile — the kit has no opinion):
+**Kit-enforced.** Five small programs in `.law/bin/`, composed however you want (git hooks, CI, shell pipelines, test runner, Makefile — the kit has no opinion):
 
+- `check-setup` — self-heals remediable kit-version drift on cold-read (stale contract layers, missing skill bridge, unwired pre-commit hook, absent `last-check.log`). Idempotent. Auto-commits heals when the working tree is clean; otherwise prints review instructions and skips commit. Surfaces irreducible blockers. Runs first in the cold-read script sequence.
 - `verify-adapters` — every adapter file listed in `project.contract.json#adapters.patched_files` still contains its `BEGIN/END .law/CONSTITUTION-FIRST` delimiter pair.
 - `validate-contracts` — every `.law/contracts/*.contract.json` validates against its declared `$schema`. Uses `check-jsonschema` if installed, otherwise `ajv + ajv-formats` if globally installed, otherwise falls back to `npx ajv-cli` with `ajv-formats` pulled in automatically. Fails closed only if none are available.
 - `check-coupling` — if a diff touches paths declared in `project.contract.json#enforcement.coupled_paths` without touching any file under `.law/contracts/`, flags the coupling violation. Opt-in; empty globs list = no-op.
@@ -357,5 +361,6 @@ If your project has no code enforcing a contract, that contract remains prose un
 |---|---|---|
 | *(YYYY-MM-DD)* | Initial adoption. | *(n)* |
 | 2026-04-18 | Added `skill` layer to doc-taxonomy contract and schema. | Coordinator batch (elegant-discovering-gizmo) |
+| 2026-04-18 | Added `.law/bin/check-setup` self-heal on cold-read; bumped cold-read protocol to run it first (new step 6), moved kit-integrity checks to step 7; bumped Constitution version to 2. | firstlaw v1.3 |
 
 > Record every subsequent amendment with a row here. An amendment without a row is unrecorded and, by Article 9, did not happen.
