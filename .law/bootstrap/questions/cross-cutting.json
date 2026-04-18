@@ -49,6 +49,14 @@
       "id": "anti-goals",
       "intent": "Things this project will explicitly not do, each paired with a reason.",
       "answer_shape": "free_text",
+      "expected_response": {
+        "description": "Array of {goal, reason} objects (preferred). Bare strings accepted for backwards compatibility.",
+        "example": [
+          { "goal": "no OCR", "reason": "library extraction only — OCR would widen scope beyond the product's reason for existing." },
+          { "goal": "no real-time sync", "reason": "batch cadence is a deliberate simplicity commitment; real-time invites state-machine complexity we refuse to own." }
+        ],
+        "legacy_form_example": ["no OCR", "no real-time sync"]
+      },
       "blocking": true,
       "asked_by_phase": 1,
       "notes": "Agent probes for reasons. An anti-goal without a reason remains a preference; it must become a commitment to enter the contract."
