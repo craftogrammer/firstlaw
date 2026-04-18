@@ -1,0 +1,388 @@
+#!/bin/sh
+"exec" "python3" "$0" "$@"
+""":"
+:<<'END_SHELL_CLOAK'
+"""
+"""check-setup — firstlaw self-heal on cold-read.
+
+Detects and heals the narrow set of deterministic, safe-to-automate drift
+between the kit as it ships and the kit as it lives in a consuming project.
+Runs via polyglot shebang: `bash check-setup`, `./check-setup`, and
+`python3 check-setup` all route through `python3`.
+
+Heals (auto, atomic commit per heal when tree is clean at start):
+  - `doc-taxonomy.contract.json` missing a layer the schema declares
+    (bundled canonical definitions below; extend CANONICAL_LAYERS when new
+    layers ship with a new kit version)
+  - `.claude/skills/` missing when `.law/skills/` exists (symlink on Unix,
+    recursive copy on Windows)
+  - `.law/context/last-check.log` missing (writes this run's stamp)
+  - `.git/hooks/pre-commit` missing the kit-managed delimited block
+  - `CONSTITUTION.md` Amendment log row per contract heal (§9)
+
+Surfaces (no auto-heal):
+  - `KIT_VERSION` on disk differs from EXPECTED_KIT_VERSION bundled here
+  - `project.contract.json#enforcement.coupled_paths` empty while a
+    top-level `src/`, `lib/`, or `app/` exists
+  - `pending-questions.json` entries with `blocking: true`
+  - `current-system.json#contradiction_map` entries with `status` not
+    `"resolved"`
+
+Exit codes:
+  0 — clean, or cleanly healed (including dirty-tree heals left uncommitted)
+  1 — irreducible blockers surfaced that require human decision
+  2 — internal error (bad JSON, git failure, etc.)
+
+Kit-author contract:
+  When a new kit version adds a doc-taxonomy layer to the schema, extend
+  CANONICAL_LAYERS in this file in the same commit. check-setup heals
+  downstream projects on next cold-read.
+"""
+import json
+import os
+import shutil
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+EXPECTED_KIT_VERSION = "1.3.0"
+
+CANONICAL_LAYERS = {
+    "skill": {
+        "id": "skill",
+        "purpose": "Loadable capsule projecting constitution/contract law into a runtime-trigger + imperative-body form (YAML frontmatter with name + description, keyed to the cognitive moment that triggers it). Authored by agents via the authoring-project-skills skill; regenerable; subordinate to contracts. Never a source of truth — contracts and CONSTITUTION.md remain authoritative.",
+        "mutability": "regenerable",
+        "lifetime": "regenerate when source law (constitution/contracts) changes",
+        "authority": "projection",
+        "location_pattern": [".law/skills/**/SKILL.md", ".claude/skills/**/SKILL.md"],
+    }
+}
+
+HOOK_BEGIN = "<!-- BEGIN .law/CONSTITUTION-FIRST -->"
+HOOK_END = "<!-- END .law/CONSTITUTION-FIRST -->"
+HOOK_BLOCK = f"""#!/usr/bin/env sh
+# {HOOK_BEGIN}
+# kit-managed: runs firstlaw integrity checks. Do not edit between delimiters.
+set -e
+.law/bin/verify-adapters
+.law/bin/validate-contracts
+.law/bin/check-coupling
+.law/bin/check-counts
+# {HOOK_END}
+"""
+
+SCHEMA_PATH = Path(".law/schemas/doc-taxonomy.schema.json")
+CONTRACT_PATH = Path(".law/contracts/doc-taxonomy.contract.json")
+PROJECT_CONTRACT = Path(".law/contracts/project.contract.json")
+SYS_CONTEXT = Path(".law/context/current-system.json")
+PENDING = Path(".law/context/pending-questions.json")
+LAST_CHECK = Path(".law/context/last-check.log")
+LAW_SKILLS = Path(".law/skills")
+CLAUDE_SKILLS = Path(".claude/skills")
+HOOK = Path(".git/hooks/pre-commit")
+CONSTITUTION = Path("CONSTITUTION.md")
+KIT_VERSION_FILE = Path("KIT_VERSION")
+
+
+def die(msg: str) -> int:
+    print(f"check-setup: {msg}", file=sys.stderr)
+    return 2
+
+
+def load_json(path: Path):
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise ValueError(f"{path}: {e}")
+
+
+def write_json(path: Path, data) -> None:
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+
+def run_git(args: list[str]) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["git", *args], check=False, capture_output=True, text=True
+    )
+
+
+def tree_clean() -> bool:
+    r = run_git(["status", "--porcelain"])
+    if r.returncode != 0:
+        raise RuntimeError(f"git status failed: {r.stderr.strip()}")
+    return r.stdout.strip() == ""
+
+
+def git_commit(paths: list[Path], message: str) -> None:
+    for p in paths:
+        r = run_git(["add", "--", str(p)])
+        if r.returncode != 0:
+            raise RuntimeError(f"git add {p}: {r.stderr.strip()}")
+    r = run_git(["commit", "-m", message])
+    if r.returncode != 0:
+        raise RuntimeError(f"git commit: {r.stderr.strip()}")
+
+
+def now_iso() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def today() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def schema_layer_ids() -> list[str]:
+    data = load_json(SCHEMA_PATH)
+    try:
+        return list(
+            data["properties"]["layers"]["items"]["properties"]["id"]["enum"]
+        )
+    except (KeyError, TypeError):
+        return []
+
+
+def contract_layer_ids(data) -> list[str]:
+    return [L.get("id") for L in data.get("layers", []) if isinstance(L, dict)]
+
+
+def append_amendment_row(description: str) -> None:
+    text = CONSTITUTION.read_text(encoding="utf-8")
+    row = f"| {today()} | {description} | firstlaw check-setup |"
+    if row in text:
+        return
+    lines = text.splitlines()
+    # append after the last non-empty table row under "## Amendment log"
+    try:
+        start = next(i for i, L in enumerate(lines) if L.strip() == "## Amendment log")
+    except StopIteration:
+        return
+    insert_at = len(lines)
+    for i in range(start + 1, len(lines)):
+        L = lines[i].rstrip()
+        if L.startswith("|") and not L.startswith("|---"):
+            insert_at = i + 1
+        elif L.startswith("##") and i > start:
+            break
+    lines.insert(insert_at, row)
+    CONSTITUTION.write_text("\n".join(lines) + ("\n" if text.endswith("\n") else ""), encoding="utf-8")
+
+
+def heal_missing_layers(healed: list[str], commit_paths_log: list[tuple[list[Path], str]]) -> None:
+    if not (SCHEMA_PATH.exists() and CONTRACT_PATH.exists()):
+        return
+    schema_ids = schema_layer_ids()
+    contract = load_json(CONTRACT_PATH)
+    have = set(contract_layer_ids(contract))
+    for layer_id in schema_ids:
+        if layer_id in have:
+            continue
+        canon = CANONICAL_LAYERS.get(layer_id)
+        if canon is None:
+            # no bundled definition — surface, don't heal
+            continue
+        contract.setdefault("layers", []).append(canon)
+        contract["last_validated_at"] = now_iso()
+        write_json(CONTRACT_PATH, contract)
+        desc = f"add `{layer_id}` layer to doc-taxonomy contract."
+        append_amendment_row(desc)
+        healed.append(desc)
+        commit_paths_log.append(
+            ([CONTRACT_PATH, CONSTITUTION], f"firstlaw: heal {desc}")
+        )
+        have.add(layer_id)
+
+
+def heal_claude_skills_bridge(healed: list[str], commit_paths_log: list[tuple[list[Path], str]]) -> None:
+    if not LAW_SKILLS.exists() or not any(LAW_SKILLS.iterdir()):
+        return
+    if CLAUDE_SKILLS.exists() and any(CLAUDE_SKILLS.iterdir()):
+        return
+    CLAUDE_SKILLS.parent.mkdir(parents=True, exist_ok=True)
+    on_windows = os.name == "nt" or sys.platform.startswith("win")
+    if CLAUDE_SKILLS.exists():
+        # empty dir/link — remove so we can symlink or copy cleanly
+        try:
+            CLAUDE_SKILLS.rmdir()
+        except OSError:
+            shutil.rmtree(CLAUDE_SKILLS)
+    if on_windows:
+        shutil.copytree(LAW_SKILLS, CLAUDE_SKILLS)
+        desc = "copy `.law/skills/` -> `.claude/skills/` (Windows bridge)."
+    else:
+        os.symlink("../.law/skills", CLAUDE_SKILLS)
+        desc = "symlink `.claude/skills/` -> `../.law/skills/`."
+    healed.append(desc)
+    commit_paths_log.append(([CLAUDE_SKILLS], f"firstlaw: heal {desc}"))
+
+
+def write_last_check_log(summary_line: str) -> None:
+    # bookkeeping only — written once; silent on subsequent runs to stay idempotent.
+    if LAST_CHECK.exists():
+        return
+    LAST_CHECK.parent.mkdir(parents=True, exist_ok=True)
+    LAST_CHECK.write_text(f"{now_iso()} {summary_line}\n", encoding="utf-8")
+
+
+def plan_pre_commit_hook() -> tuple[str, str] | None:
+    """Plan the hook heal but defer the disk write until after prior heal
+    commits complete — otherwise the freshly-written hook would run during
+    those earlier commits, before it is itself installed.
+    Returns (content, description) or None when nothing to heal.
+    """
+    if not HOOK.parent.is_dir():
+        return None
+    if not HOOK.exists():
+        return (HOOK_BLOCK, "install kit-managed `pre-commit` hook.")
+    text = HOOK.read_text(encoding="utf-8")
+    if HOOK_BEGIN in text and HOOK_END in text:
+        return None
+    body = text
+    if body.startswith("#!"):
+        nl = body.find("\n")
+        body = body[nl + 1 :] if nl != -1 else ""
+    new = HOOK_BLOCK + (body if body.startswith("\n") or body == "" else "\n" + body)
+    return (new, "insert kit-managed block into existing `pre-commit`.")
+
+
+def apply_pre_commit_hook(content: str) -> None:
+    HOOK.write_text(content, encoding="utf-8")
+    try:
+        HOOK.chmod(0o755)
+    except OSError:
+        pass
+
+
+def surface_checks(surfaced: list[str]) -> int:
+    blockers = 0
+
+    if KIT_VERSION_FILE.exists():
+        on_disk = KIT_VERSION_FILE.read_text(encoding="utf-8").strip()
+        if on_disk != EXPECTED_KIT_VERSION:
+            surfaced.append(
+                f"KIT_VERSION on disk is `{on_disk}`; script expects "
+                f"`{EXPECTED_KIT_VERSION}`. Run `install.sh --force` to re-fetch kit files."
+            )
+
+    if PROJECT_CONTRACT.exists():
+        try:
+            pdata = load_json(PROJECT_CONTRACT)
+        except ValueError:
+            pdata = None
+        if pdata is not None:
+            coupled = pdata.get("enforcement", {}).get("coupled_paths", [])
+            if not coupled:
+                for d in ("src", "lib", "app"):
+                    if Path(d).is_dir():
+                        surfaced.append(
+                            f"`project.contract.json#enforcement.coupled_paths` empty "
+                            f"but top-level `{d}/` exists; declare coupling or accept the default no-op."
+                        )
+                        break
+
+    if PENDING.exists():
+        try:
+            pq = load_json(PENDING)
+        except ValueError:
+            pq = None
+        if isinstance(pq, dict):
+            for q in pq.get("questions", []):
+                if isinstance(q, dict) and q.get("blocking") is True:
+                    qid = q.get("id", "<no-id>")
+                    surfaced.append(f"blocking pending-question: `{qid}`.")
+                    blockers += 1
+
+    if SYS_CONTEXT.exists():
+        try:
+            sd = load_json(SYS_CONTEXT)
+        except ValueError:
+            sd = None
+        if isinstance(sd, dict):
+            for c in sd.get("contradiction_map", []):
+                if isinstance(c, dict) and c.get("status") != "resolved":
+                    cid = c.get("id", "<no-id>")
+                    surfaced.append(f"unresolved contradiction: `{cid}`.")
+                    blockers += 1
+
+    return blockers
+
+
+def print_report(healed: list[str], surfaced: list[str], commit_note: str) -> None:
+    if not healed and not surfaced:
+        return
+    print("firstlaw check-setup v1.3")
+    if healed:
+        print("  healed:")
+        for h in healed:
+            print(f"    - {h}")
+    if surfaced:
+        print("  surfaced (no auto-heal):")
+        for s in surfaced:
+            print(f"    - {s}")
+    if commit_note:
+        print(f"  {commit_note}")
+
+
+def main() -> int:
+    try:
+        clean_at_start = tree_clean()
+    except RuntimeError as e:
+        return die(str(e))
+
+    healed: list[str] = []
+    commit_queue: list[tuple[list[Path], str]] = []
+    hook_plan: tuple[str, str] | None = None
+
+    try:
+        heal_missing_layers(healed, commit_queue)
+        heal_claude_skills_bridge(healed, commit_queue)
+        hook_plan = plan_pre_commit_hook()
+        if hook_plan is not None:
+            healed.append(hook_plan[1])
+    except (ValueError, OSError, RuntimeError) as e:
+        return die(str(e))
+
+    surfaced: list[str] = []
+    try:
+        blockers = surface_checks(surfaced)
+    except (ValueError, OSError) as e:
+        return die(str(e))
+
+    commit_note = ""
+    if healed:
+        if clean_at_start:
+            try:
+                for paths, msg in commit_queue:
+                    git_commit(paths, msg)
+                if hook_plan is not None:
+                    # hooks live outside the git index; apply on disk only
+                    apply_pre_commit_hook(hook_plan[0])
+                n_commits = len(commit_queue)
+                commit_note = f"committed: {n_commits} heal" + ("s" if n_commits != 1 else "")
+            except RuntimeError as e:
+                return die(str(e))
+        else:
+            if hook_plan is not None:
+                apply_pre_commit_hook(hook_plan[0])
+            commit_note = (
+                "working tree was dirty at start; heals NOT committed - "
+                "review 'git diff' and commit the heals alongside your work before proceeding with the task."
+            )
+
+    print_report(healed, surfaced, commit_note)
+
+    summary_line = (
+        f"healed={len(healed)} surfaced={len(surfaced)} blockers={blockers}"
+    )
+    try:
+        write_last_check_log(summary_line)
+    except OSError as e:
+        return die(str(e))
+
+    if blockers:
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
