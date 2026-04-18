@@ -129,6 +129,26 @@ Subagents ask questions via interactive elicitation. Every question declares `bl
 
 Cross-cutting questions (identity + mode) live in `.law/bootstrap/questions/cross-cutting.json`. Each subagent owns its own questions — no central library for them.
 
+## §5.1 Degraded / headless mode
+
+Headless contexts — CI runs, scheduled bootstrap invocations, red-team probes, single-agent sessions with no orchestrator or human channel — cannot satisfy blocking elicitation. No human is present to answer. The agent must not rationalize its way past this constraint by relabeling blocking questions as judgments.
+
+**Default behavior (mandatory unless explicitly opted-in): halt-and-wait.** The agent records the blocking question in `.law/context/pending-questions.json`, ends the turn, and closes the session. The next interactive human session picks up the pending entry.
+
+**Opt-in escape.** Set `project.contract.json#bootstrap.allow_headless_fabrication` to `true`. When this flag is `true` AND no interactive channel is available, the agent proceeds under these exact rules:
+
+1. The agent populates the contract field with an inferred value derived from available evidence — README, code structure, commit history, tests.
+2. The agent appends the value to `.law/context/current-system.json#judgment_log` labeled `judgment`, with a `rationale` string naming the inference source.
+3. The agent writes the corresponding `.law/context/pending-questions.json` entry with `blocking: false`, `deferred_reason: headless-mode`, and `fabricated_value: <the value>`.
+4. At the next interactive session, cold-read must surface every entry carrying `deferred_reason: headless-mode` to the human for review. The human confirms, overrides, or amends each one.
+
+**Hard limits on headless fabrication:**
+
+- The agent must never fabricate `purpose_one_line` or any `anti_goals`. Identity requires explicit human declaration. Halt instead.
+- The agent must never fabricate `owner` or `amendment_authority`. Halt instead.
+- Every fabricated value must be labeled `judgment`. Never `evidence`.
+- Any subsequent session must surface every `deferred_reason: headless-mode` entry before acting on other work. Refuse downstream steps until review completes.
+
 ---
 
 ## 6. Research audit trail
