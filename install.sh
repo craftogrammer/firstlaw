@@ -135,6 +135,7 @@ KIT_VERSION
 .law/bin/validate-contracts
 .law/bin/check-coupling
 .law/bin/check-counts
+.law/bin/check-setup
 .law/git-hooks/pre-commit.sample
 .law/templates/README.md
 .law/templates/check-truth-owners.example.mjs
@@ -152,6 +153,7 @@ KIT_VERSION
 .law/skills/classifying-before-authoring/SKILL.md
 .law/skills/surfacing-forbidden-edges/SKILL.md
 .law/skills/authoring-project-skills/SKILL.md
+.law/skills/auditing-firstlaw-integrity/SKILL.md
 .law/skills/using-firstlaw/SKILL.md
 "
 
@@ -196,8 +198,10 @@ Next step:
 
       follow CONSTITUTION.md
 
-  The agent detects skeleton-state contracts and runs the bootstrap
-  protocol at .law/bootstrap/INIT.md.
+  The agent runs the cold-read protocol, which self-heals any remediable
+  kit-version drift before acting on your request. Re-run this installer
+  with --force anytime to pull new kit features; the next cold-read
+  heals your project to match.
 
 Kit version: $(cat KIT_VERSION 2>/dev/null || echo '?')
 EOF
