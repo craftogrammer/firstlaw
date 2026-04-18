@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/bin/sh
+"exec" "python3" "$0" "$@"
 """check-counts — confirm declared counts in current-system.json match reality.
 
 Catches drift between the prose/structured counts in
