@@ -42,7 +42,7 @@ This document tops the project's truth hierarchy. Everything else — code, cont
 
 - **Project name:** *(see `.law/contracts/project.contract.json#identity.name`)*
 - **Mode:** *(see `.law/contracts/project.contract.json#mode`)* — one of `greenfield`, `greenfield-from-empty`, `brownfield`
-- **Constitution version:** 3
+- **Constitution version:** 4
 - **Kit version:** *(see `KIT_VERSION` at repo root)*
 - **Last amended:** 2026-04-19
 - **Amendment authority:** *(a named human or role in the project)*
@@ -251,6 +251,14 @@ Plans exist in this repo as a recognized document layer, but the kit does not ow
 - declare greenfield mode in a repo that already has non-trivial runtime truth
 - ship feature code in brownfield mode while the contradiction map is empty (unless a human explicitly confirms empty after discovery)
 
+### Mechanical vs judgment over the project lifecycle
+
+Mechanical enforcement scales with contract population. A day-zero project has empty `write_patterns`, empty `forbidden_patterns`, sparse `dependency-rules.allowed`, and few declared truths — the new `.law/bin/check-truth-ownership`, `check-anti-patterns`, and `check-coupling` scripts all exit 0 silently because they have nothing to enforce against. This is not a bug. The judgment skills (`halting-on-ambiguity`, `refusing-anti-goal-creep`, `resolving-layer-conflicts`, `grounding-with-dated-research`, `running-brownfield-discovery`) carry the agent through the early phase where the shape is still forming.
+
+As the project matures, agents MUST populate contract pattern fields as they declare each truth, anti-goal, and domain (per `maintaining-mechanical-enforcement`). Each commit that declares a new truth must include matching `write_patterns`; each anti-goal that is keyword-detectable must include `forbidden_patterns`; each stack change must audit and update existing patterns. Mechanical coverage grows one commit at a time.
+
+**Expect the judgment-to-mechanical ratio to invert as the project matures.** Day zero: judgment carries 90% of the discipline, mechanics 10%. Year later (mature shape): mechanics catch 80% at pre-commit, judgment fires only on genuine ambiguity. The kit supports both phases without mode-switching — the same scripts and skills apply at every maturity.
+
 ---
 
 ## 9. Mutation rules
@@ -268,6 +276,7 @@ Plans exist in this repo as a recognized document layer, but the kit does not ow
 | New dependency quality finding or acknowledgement | `quality-audit.contract.json` |
 | Any change to identity, mode, pointers, stack, or anti-goals | `project.contract.json` and this file |
 | Changed runtime-specific load model or discovery path | `agent-runtime.contract.json` (with retrieval date) |
+| New or changed write-site pattern, forbidden-pattern, or anti-pattern | relevant contract's `write_patterns` / `forbidden_patterns` / `anti_patterns` field (same commit) |
 
 Every contract stamps `last_validated_at` on touch and updates `generated_from.run_at` when a subagent re-derives it.
 
@@ -328,9 +337,12 @@ Firstlaw enforces properties of itself, not properties of your code. Keep the di
 - `check-setup` — self-heals remediable kit-version drift on cold-read (stale contract layers, missing skill bridge, unwired pre-commit hook, absent `last-check.log`). Idempotent. Auto-commits heals when the working tree is clean; otherwise prints review instructions and skips commit. Surfaces irreducible blockers. Runs first in the cold-read script sequence.
 - `verify-adapters` — every adapter file listed in `project.contract.json#adapters.patched_files` still contains its `BEGIN/END .law/CONSTITUTION-FIRST` delimiter pair.
 - `validate-contracts` — every `.law/contracts/*.contract.json` validates against its declared `$schema`. Uses `check-jsonschema` if installed, otherwise `ajv + ajv-formats` if globally installed, otherwise falls back to `npx ajv-cli` with `ajv-formats` pulled in automatically. Fails closed only if none are available.
+- `check-anti-patterns` — walks source files for matches against `project.contract.json#identity.anti_goals[].forbidden_patterns` and `#enforcement.anti_patterns[]`. Error-severity matches fail; warnings printed. Empty = no-op.
 - `check-coupling` — walks source-tree imports across domains declared in `domain-map.contract.json`; fails any edge not in `dependency-rules.contract.json#allowed` (default deny). Starter languages: TypeScript, JavaScript, Python. Adapts per project.
 - `check-amendment-coupling` — flags source-tree changes lacking a matching `.law/contracts/*` amendment when `project.contract.json#enforcement.coupled_paths` is populated. Opt-in; empty globs list = no-op.
 - `check-counts` — verifies declared counts in `.law/context/current-system.json` match reality: `summary.open_blockers_count` against blocking entries in pending-questions, prose `"N open contradictions"` against unresolved entries in `contradiction_map`.
+- `check-skill-voice` — validates every `.law/skills/*/SKILL.md` and `.claude/skills/*/SKILL.md` against kit-owned voice rules (frontmatter shape, forbidden softening verbs, § citation, required sections). Universal check.
+- `check-truth-ownership` — walks source files for matches against `truth-owners.contract.json#truths[].write_patterns`. Any match outside the truth's owner domain fails. Empty patterns = no-op.
 
 These parts of repo law do not depend on project semantics for enforcement. The kit owns them end to end.
 
@@ -365,5 +377,6 @@ If your project has no code enforcing a contract, that contract remains prose un
 | 2026-04-18 | Added `skill` layer to doc-taxonomy contract and schema. | Coordinator batch (elegant-discovering-gizmo) |
 | 2026-04-18 | Added `.law/bin/check-setup` self-heal on cold-read; bumped cold-read protocol to run it first (new step 6), moved kit-integrity checks to step 7; bumped Constitution version to 2. | firstlaw v1.3 |
 | 2026-04-19 | v1.4: real cross-domain import checker; old coupling script renamed to `check-amendment-coupling`; brownfield self-heal pass-with-warning for plan-backed contradictions; `validate-contracts` Windows Cygwin fix via Python polyglot; new contracts `agent-runtime.contract.json` + schema; new schema `current-system.schema.json`; ambiguity-policies +3 (design-fork, multi-candidate-owner, shadow-reader); dep-edge skill +5 rationalizations; authoring-project-skills refresh; `.gitattributes` shipped; check-setup output attribution + disposition + reload hint; INIT §5.1 degraded/headless mode; Constitution version bumped to 3. | firstlaw v1.4 |
+| 2026-04-19 | v1.5: parameterized mechanical enforcement (check-truth-ownership, check-anti-patterns, check-skill-voice); extended check-setup (unclassified-doc surface + EXPECTED_KIT_VERSION regression fix); extended check-counts (amendment-log reconciliation); fixed validate-contracts silent-fail regression from v1.4; updated pre-commit.sample to wire all enforcement scripts; schema additions for write_patterns / forbidden_patterns / anti_patterns; fixed stale coupled_paths description; new workflow skill maintaining-mechanical-enforcement; merged surfacing-forbidden-edges into checking-dep-edges-before-importing; slimmed using-firstlaw and authoring-project-skills; extracted skill-template.md; §8 maturity-curve subsection added; Constitution version bumped to 4. | firstlaw v1.5 |
 
 > Record every subsequent amendment with a row here. An amendment without a row is unrecorded and, by Article 9, did not happen.
