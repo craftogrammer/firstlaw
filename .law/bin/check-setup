@@ -26,7 +26,8 @@ Surfaces (no auto-heal):
     top-level `src/`, `lib/`, or `app/` exists
   - `pending-questions.json` entries with `blocking: true`
   - `current-system.json#contradiction_map` entries with `status` not
-    `"resolved"`
+    `"resolved"` (brownfield: pass-with-warning when every unresolved
+    entry carries a `related_plan` path that exists on disk)
 
 Exit codes:
   0 — clean, or cleanly healed (including dirty-tree heals left uncommitted)
@@ -46,6 +47,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+KIT_VERSION = "1.4"
 EXPECTED_KIT_VERSION = "1.3.0"
 
 CANONICAL_LAYERS = {
@@ -84,6 +86,11 @@ HOOK = Path(".git/hooks/pre-commit")
 CONSTITUTION = Path("CONSTITUTION.md")
 KIT_VERSION_FILE = Path("KIT_VERSION")
 
+BRIDGE_RELOAD_HINT = (
+    "skills bridge populated; reload your agent runtime to register the "
+    "skill directories."
+)
+
 
 def die(msg: str) -> int:
     print(f"check-setup: {msg}", file=sys.stderr)
@@ -114,7 +121,7 @@ def tree_clean() -> bool:
     return r.stdout.strip() == ""
 
 
-def git_commit(paths: list[Path], message: str) -> None:
+def git_commit(paths: list[Path], message: str) -> str:
     for p in paths:
         r = run_git(["add", "--", str(p)])
         if r.returncode != 0:
@@ -122,6 +129,10 @@ def git_commit(paths: list[Path], message: str) -> None:
     r = run_git(["commit", "-m", message])
     if r.returncode != 0:
         raise RuntimeError(f"git commit: {r.stderr.strip()}")
+    rev = run_git(["rev-parse", "--short", "HEAD"])
+    if rev.returncode != 0:
+        raise RuntimeError(f"git rev-parse: {rev.stderr.strip()}")
+    return rev.stdout.strip()
 
 
 def now_iso() -> str:
@@ -168,7 +179,20 @@ def append_amendment_row(description: str) -> None:
     CONSTITUTION.write_text("\n".join(lines) + ("\n" if text.endswith("\n") else ""), encoding="utf-8")
 
 
-def heal_missing_layers(healed: list[str], commit_paths_log: list[tuple[list[Path], str]]) -> None:
+class Heal:
+    """One heal action. `paths` empty means disk-only (no commit)."""
+
+    __slots__ = ("desc", "paths", "message", "sha", "disk_only_reason")
+
+    def __init__(self, desc: str, paths: list[Path], message: str, disk_only_reason: str = ""):
+        self.desc = desc
+        self.paths = paths
+        self.message = message
+        self.sha = ""
+        self.disk_only_reason = disk_only_reason
+
+
+def heal_missing_layers(heals: list[Heal]) -> None:
     if not (SCHEMA_PATH.exists() and CONTRACT_PATH.exists()):
         return
     schema_ids = schema_layer_ids()
@@ -179,61 +203,52 @@ def heal_missing_layers(healed: list[str], commit_paths_log: list[tuple[list[Pat
             continue
         canon = CANONICAL_LAYERS.get(layer_id)
         if canon is None:
-            # no bundled definition — surface, don't heal
+            # no bundled definition — surface, do not heal
             continue
         contract.setdefault("layers", []).append(canon)
         contract["last_validated_at"] = now_iso()
         write_json(CONTRACT_PATH, contract)
-        desc = f"add `{layer_id}` layer to doc-taxonomy contract."
-        append_amendment_row(desc)
-        healed.append(desc)
-        commit_paths_log.append(
-            ([CONTRACT_PATH, CONSTITUTION], f"firstlaw: heal {desc}")
+        desc = f"add `{layer_id}` layer to doc-taxonomy contract"
+        append_amendment_row(desc + ".")
+        heals.append(
+            Heal(desc, [CONTRACT_PATH, CONSTITUTION], f"firstlaw: heal {desc}.")
         )
         have.add(layer_id)
 
 
-def heal_claude_skills_bridge(healed: list[str], commit_paths_log: list[tuple[list[Path], str]]) -> None:
+def heal_claude_skills_bridge(heals: list[Heal]) -> bool:
     if not LAW_SKILLS.exists() or not any(LAW_SKILLS.iterdir()):
-        return
+        return False
     if CLAUDE_SKILLS.exists() and any(CLAUDE_SKILLS.iterdir()):
-        return
+        return False
     CLAUDE_SKILLS.parent.mkdir(parents=True, exist_ok=True)
     on_windows = os.name == "nt" or sys.platform.startswith("win")
     if CLAUDE_SKILLS.exists():
-        # empty dir/link — remove so we can symlink or copy cleanly
+        # empty dir/link — remove so the symlink or copy lands cleanly
         try:
             CLAUDE_SKILLS.rmdir()
         except OSError:
             shutil.rmtree(CLAUDE_SKILLS)
     if on_windows:
         shutil.copytree(LAW_SKILLS, CLAUDE_SKILLS)
-        desc = "copy `.law/skills/` -> `.claude/skills/` (Windows bridge)."
+        desc = "copy `.law/skills/` -> `.claude/skills/` (Windows bridge)"
     else:
         os.symlink("../.law/skills", CLAUDE_SKILLS)
-        desc = "symlink `.claude/skills/` -> `../.law/skills/`."
-    healed.append(desc)
-    commit_paths_log.append(([CLAUDE_SKILLS], f"firstlaw: heal {desc}"))
-
-
-def write_last_check_log(summary_line: str) -> None:
-    # bookkeeping only — written once; silent on subsequent runs to stay idempotent.
-    if LAST_CHECK.exists():
-        return
-    LAST_CHECK.parent.mkdir(parents=True, exist_ok=True)
-    LAST_CHECK.write_text(f"{now_iso()} {summary_line}\n", encoding="utf-8")
+        desc = "symlink `.claude/skills/` -> `../.law/skills/`"
+    heals.append(Heal(desc, [CLAUDE_SKILLS], f"firstlaw: heal {desc}."))
+    return True
 
 
 def plan_pre_commit_hook() -> tuple[str, str] | None:
-    """Plan the hook heal but defer the disk write until after prior heal
-    commits complete — otherwise the freshly-written hook would run during
+    """Plan the hook heal. Defer the disk write until after prior heal
+    commits complete; otherwise the freshly-written hook runs during
     those earlier commits, before it is itself installed.
     Returns (content, description) or None when nothing to heal.
     """
     if not HOOK.parent.is_dir():
         return None
     if not HOOK.exists():
-        return (HOOK_BLOCK, "install kit-managed `pre-commit` hook.")
+        return (HOOK_BLOCK, "install kit-managed pre-commit block")
     text = HOOK.read_text(encoding="utf-8")
     if HOOK_BEGIN in text and HOOK_END in text:
         return None
@@ -242,7 +257,7 @@ def plan_pre_commit_hook() -> tuple[str, str] | None:
         nl = body.find("\n")
         body = body[nl + 1 :] if nl != -1 else ""
     new = HOOK_BLOCK + (body if body.startswith("\n") or body == "" else "\n" + body)
-    return (new, "insert kit-managed block into existing `pre-commit`.")
+    return (new, "insert kit-managed block into existing pre-commit")
 
 
 def apply_pre_commit_hook(content: str) -> None:
@@ -253,7 +268,27 @@ def apply_pre_commit_hook(content: str) -> None:
         pass
 
 
-def surface_checks(surfaced: list[str]) -> int:
+def project_mode() -> str:
+    if not PROJECT_CONTRACT.exists():
+        return ""
+    try:
+        pdata = load_json(PROJECT_CONTRACT)
+    except ValueError:
+        return ""
+    if not isinstance(pdata, dict):
+        return ""
+    mode = pdata.get("mode", "")
+    return mode if isinstance(mode, str) else ""
+
+
+def plan_backed(entry: dict) -> bool:
+    plan = entry.get("related_plan")
+    return isinstance(plan, str) and bool(plan.strip()) and Path(plan).exists()
+
+
+def surface_checks(
+    surfaced: list[str], warnings: list[str], mode: str
+) -> int:
     blockers = 0
 
     if KIT_VERSION_FILE.exists():
@@ -298,8 +333,33 @@ def surface_checks(surfaced: list[str]) -> int:
         except ValueError:
             sd = None
         if isinstance(sd, dict):
-            for c in sd.get("contradiction_map", []):
-                if isinstance(c, dict) and c.get("status") != "resolved":
+            entries = [
+                c for c in sd.get("contradiction_map", []) if isinstance(c, dict)
+            ]
+            unresolved = [
+                c for c in entries if c.get("status") != "resolved"
+            ]
+            if mode == "brownfield" and unresolved:
+                for c in unresolved:
+                    cid = c.get("id", "<no-id>")
+                    if plan_backed(c):
+                        plan = c.get("related_plan", "")
+                        warnings.append(
+                            f"unresolved contradiction `{cid}` — plan: `{plan}`."
+                        )
+                        continue
+                    plan = c.get("related_plan")
+                    reason = (
+                        "missing `related_plan`"
+                        if not (isinstance(plan, str) and plan.strip())
+                        else f"`related_plan` path `{plan}` not found"
+                    )
+                    surfaced.append(
+                        f"unresolved contradiction `{cid}`: {reason}."
+                    )
+                    blockers += 1
+            else:
+                for c in unresolved:
                     cid = c.get("id", "<no-id>")
                     surfaced.append(f"unresolved contradiction: `{cid}`.")
                     blockers += 1
@@ -307,20 +367,64 @@ def surface_checks(surfaced: list[str]) -> int:
     return blockers
 
 
-def print_report(healed: list[str], surfaced: list[str], commit_note: str) -> None:
-    if not healed and not surfaced:
-        return
-    print("firstlaw check-setup v1.3")
-    if healed:
-        print("  healed:")
-        for h in healed:
-            print(f"    - {h}")
+def format_heal_line(h: Heal) -> str:
+    if h.sha:
+        return f"  - {h.desc} — commit: {h.sha}"
+    reason = h.disk_only_reason or "disk-only"
+    return f"  - {h.desc} — {reason}"
+
+
+def print_report(
+    heals: list[Heal],
+    surfaced: list[str],
+    warnings: list[str],
+    dirty_note: str,
+    bridge_populated: bool,
+) -> None:
+    print(f"firstlaw check-setup v{KIT_VERSION}")
+    if heals:
+        print("heals:")
+        for h in heals:
+            print(format_heal_line(h))
     if surfaced:
-        print("  surfaced (no auto-heal):")
+        print("surfaced (no auto-heal):")
         for s in surfaced:
-            print(f"    - {s}")
-    if commit_note:
-        print(f"  {commit_note}")
+            print(f"  - {s}")
+    if dirty_note:
+        print(dirty_note)
+    for w in warnings:
+        print(w, file=sys.stderr)
+    if bridge_populated:
+        print(BRIDGE_RELOAD_HINT)
+
+
+def write_last_check_log(
+    heals: list[Heal],
+    surfaced: list[str],
+    warnings: list[str],
+    blockers: int,
+    clean_disposition: str,
+) -> None:
+    LAST_CHECK.parent.mkdir(parents=True, exist_ok=True)
+    lines = [
+        f"{now_iso()} firstlaw check-setup v{KIT_VERSION} "
+        f"healed={len(heals)} surfaced={len(surfaced)} blockers={blockers}"
+    ]
+    if heals:
+        lines.append("heals:")
+        for h in heals:
+            lines.append(format_heal_line(h))
+    if surfaced:
+        lines.append("surfaced:")
+        for s in surfaced:
+            lines.append(f"  - {s}")
+    if warnings:
+        lines.append("warnings:")
+        for w in warnings:
+            lines.append(f"  - {w}")
+    if clean_disposition:
+        lines.append(clean_disposition)
+    LAST_CHECK.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def main() -> int:
@@ -329,53 +433,68 @@ def main() -> int:
     except RuntimeError as e:
         return die(str(e))
 
-    healed: list[str] = []
-    commit_queue: list[tuple[list[Path], str]] = []
+    heals: list[Heal] = []
+    bridge_populated = False
     hook_plan: tuple[str, str] | None = None
 
     try:
-        heal_missing_layers(healed, commit_queue)
-        heal_claude_skills_bridge(healed, commit_queue)
+        heal_missing_layers(heals)
+        bridge_populated = heal_claude_skills_bridge(heals)
         hook_plan = plan_pre_commit_hook()
-        if hook_plan is not None:
-            healed.append(hook_plan[1])
     except (ValueError, OSError, RuntimeError) as e:
         return die(str(e))
 
+    mode = project_mode()
     surfaced: list[str] = []
+    warnings: list[str] = []
     try:
-        blockers = surface_checks(surfaced)
+        blockers = surface_checks(surfaced, warnings, mode)
     except (ValueError, OSError) as e:
         return die(str(e))
 
-    commit_note = ""
-    if healed:
+    dirty_note = ""
+    if heals or hook_plan is not None:
         if clean_at_start:
             try:
-                for paths, msg in commit_queue:
-                    git_commit(paths, msg)
-                if hook_plan is not None:
-                    # hooks live outside the git index; apply on disk only
-                    apply_pre_commit_hook(hook_plan[0])
-                n_commits = len(commit_queue)
-                commit_note = f"committed: {n_commits} heal" + ("s" if n_commits != 1 else "")
+                for h in heals:
+                    if h.paths:
+                        h.sha = git_commit(h.paths, h.message)
             except RuntimeError as e:
                 return die(str(e))
         else:
-            if hook_plan is not None:
-                apply_pre_commit_hook(hook_plan[0])
-            commit_note = (
-                "working tree was dirty at start; heals NOT committed - "
-                "review 'git diff' and commit the heals alongside your work before proceeding with the task."
+            for h in heals:
+                if h.paths:
+                    h.disk_only_reason = "uncommitted (dirty tree at start)"
+            dirty_note = (
+                "working tree was dirty at start; heals NOT committed — "
+                "review `git diff` and commit the heals alongside your work "
+                "before proceeding with the task."
+            )
+        if hook_plan is not None:
+            # hooks live outside the git index; apply on disk only
+            apply_pre_commit_hook(hook_plan[0])
+            heals.append(
+                Heal(
+                    hook_plan[1],
+                    [],
+                    "",
+                    disk_only_reason="disk-only (`.git/hooks/` is git-untracked)",
+                )
             )
 
-    print_report(healed, surfaced, commit_note)
+    clean_run = not heals and not surfaced and not warnings and not dirty_note
+    clean_disposition = ""
+    if clean_run:
+        clean_disposition = (
+            f"firstlaw check-setup v{KIT_VERSION} — clean (0 heals, "
+            f"0 surfaced). last-check.log updated."
+        )
+        print(clean_disposition)
+    else:
+        print_report(heals, surfaced, warnings, dirty_note, bridge_populated)
 
-    summary_line = (
-        f"healed={len(healed)} surfaced={len(surfaced)} blockers={blockers}"
-    )
     try:
-        write_last_check_log(summary_line)
+        write_last_check_log(heals, surfaced, warnings, blockers, clean_disposition)
     except OSError as e:
         return die(str(e))
 
