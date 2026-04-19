@@ -1,12 +1,14 @@
 #!/bin/sh
 "exec" "python3" "$0" "$@"
-"""check-skill-voice — validate SKILL.md files against kit-owned voice rules.
+"""check-skill-voice — validate firstlaw SKILL.md files against kit-owned voice rules.
 
-Walks `.law/skills/*/SKILL.md` and `.claude/skills/*/SKILL.md`, enforcing the
-v1.5 voice contract: YAML frontmatter shape, `name:` slug format, `description:`
-prefix, 1024-char frontmatter cap, softening-verb ban in author-voice prose,
-`§N` constitution citation presence, and the required section scaffold. Voice
-rules are kit-owned; a project SKILL.md cannot opt out.
+Walks `.law/skills/*/SKILL.md` only. Enforces the v1.5 voice contract: YAML
+frontmatter shape, `name:` slug format, `description:` prefix, 1024-char
+frontmatter cap, softening-verb ban in author-voice prose, `§N` constitution
+citation presence, and the required section scaffold. Voice rules apply to
+firstlaw-authored skills; user-installed Claude Code skills in `.claude/skills/`
+are out of scope (may be unrelated tool skills not written to firstlaw's voice,
+e.g. `playwright-cli`, `project-conventions`).
 
 Exits 0 clean, 1 on any violation, 2 on internal error. One diagnostic line per
 violation: `<path>:<line>: <check> — <detail>`.
@@ -15,7 +17,7 @@ import re
 import sys
 from pathlib import Path
 
-SKILL_ROOTS = [Path(".law/skills"), Path(".claude/skills")]
+SKILL_ROOTS = [Path(".law/skills")]
 
 FRONTMATTER_MAX = 1024
 NAME_RE = re.compile(r"^[a-z0-9-]+$")
